@@ -7,11 +7,13 @@ const PORT = process.env.PORT || 3002;
 
 // TODO: optionally move credentials to env variables
 const db = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'Investigo',
-  password: 'exape4861',
-  port: 5432,
+  host: process.env.PGHOST,
+  port: process.env.PGPORT || 5432,
+  database: process.env.PGDATABASE,
+  user: process.env.PGUSER,
+  password: process.env.PGPASSWORD,
+  ssl: process.env.PGSSLMODE ? { rejectUnauthorized: false } : undefined,
+  max: 5,
 });
 
 app.use(express.json());

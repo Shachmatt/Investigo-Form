@@ -13,6 +13,7 @@ const db = new Pool({
     user: process.env.PGUSER,
     password: process.env.PGPASSWORD,
     ssl: process.env.PGSSLMODE ? { rejectUnauthorized: false } : undefined,
+    max: 5,
   });
   
 
