@@ -5,13 +5,14 @@ import pg from "pg";
 const app = express();
 const port = 3000;
 
-const db = new pg.Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "Investigo",
-  password: "exape4861",
-  port: 5432,
-});
+const db = new Pool({
+    host: process.env.PGHOST,
+    port: process.env.PGPORT || 5432,
+    database: process.env.PGDATABASE,
+    user: process.env.PGUSER,
+    password: process.env.PGPASSWORD,
+    ssl: process.env.PGSSLMODE ? { rejectUnauthorized: false } : undefined,
+  });
   
 
 app.use(bodyParser.urlencoded({ extended: true }));
