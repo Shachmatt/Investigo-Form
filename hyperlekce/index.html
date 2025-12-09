@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Learning App Creator</title>
+    <style>
+        :root {
+            --primary: #850F8D;    /* Tmavě fialová */
+            --secondary: #F8F9D7;  /* Krémová */
+            --input-bg: #FFFFFF;
+            --success: #4ECDC4;
+            --danger: #FF6B6B;
+            --dark-btn: #333;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: #222;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        /* Simulace mobilu */
+        #app-root {
+            width: 100%;
+            max-width: 400px;
+            background-color: var(--primary);
+            height: 100%;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+
+        /* --- STYLY PRO UI --- */
+        h1, h2, h3 { margin: 0; }
+
+        .header {
+            text-align: center;
+            color: var(--secondary);
+            padding: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .content { padding: 20px; padding-bottom: 60px; }
+
+        /* Formuláře */
+        .form-box {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .label {
+            color: var(--secondary);
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: none;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+
+        .btn-add { background-color: var(--success); color: #000; }
+        .btn-nav { background-color: var(--secondary); color: var(--primary); margin-top: 10px; }
+        .btn-small { padding: 8px; font-size: 12px; }
+        .btn-edit { background-color: #ffc107; color: #000; width: auto; margin-left: 5px; }
+        .btn-delete { background-color: var(--danger); color: #000; width: auto; margin-left: 5px; }
+
+        /* Karty Lekcí */
+        .card {
+            background-color: var(--secondary);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            position: relative;
+        }
+        .card:hover { transform: translateY(-2px); }
+        
+        .card-title { color: var(--primary); font-size: 18px; font-weight: bold; }
+        .card-desc { color: #555; font-size: 14px; margin-top: 5px; }
+        .card-hint { font-size: 11px; text-align: right; color: var(--primary); font-style: italic; margin-top: 10px;}
+
+        /* Detail Sekce */
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            backdrop-filter: blur(5px);
+            z-index: 10;
+        }
+        .back-btn {
+            background: none; color: var(--secondary); width: auto; padding: 0; margin-right: 15px; font-size: 16px;
+        }
+        .nav-title { color: var(--secondary); font-weight: bold; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .section-container {
+            background: rgba(248, 249, 215, 0.05);
+            border: 1px solid rgba(248, 249, 215, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+
+        .section-header {
+            text-align: center; margin-bottom: 15px;
+        }
+        .section-badge {
+            background: rgba(0,0,0,0.3);
+            color: var(--secondary);
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        /* Seznam lekcí */
+        .exercise-item {
+            display: flex;
+            align-items: center;
+            background: rgba(0,0,0,0.2);
+            padding: 8px;
+            border-radius: 30px;
+            margin-bottom: 8px;
+        }
+        .ex-circle {
+            width: 36px; height: 36px;
+            background: var(--secondary);
+            color: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        .ex-id { color: #ddd; font-family: monospace; font-size: 12px; }
+
+        /* Export tlačítko */
+        .divider { height: 1px; background: rgba(255,255,255,0.2); margin: 30px 0; }
+        .btn-export {
+            background: #333; color: #fff; font-family: monospace; border: 1px solid #555;
+        }
+
+        /* Row pro inputy */
+        .row { display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="app-root">
+    </div>
+
+<script>
+    // --- STAV APLIKACE ---
+    let learningData = [];
+    let activeLessonId = null;
+    let isLoading = false;
+
+    // --- LOGIKA ---
+
+    // 1. Přidání Super Lekce
+    async function addSuperLesson() {
+        const titleInput = document.getElementById('sl-title');
+        const descInput = document.getElementById('sl-desc');
+        
+        if(!titleInput.value.trim()) { alert('Vyplňte název!'); return; }
+
+        try {
+            await fetch('/api/super-lessons', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: titleInput.value,
+                    description: descInput.value
+                })
+            });
+            titleInput.value = '';
+            descInput.value = '';
+            await loadFromServer(true);
+        } catch (err) {
+            console.error(err);
+            alert('Nepodařilo se vytvořit super lekci.');
+        }
+    }
+
+    // 1b. Editace a mazání Super Lekce
+    async function editSuperLesson(lessonId) {
+        const lesson = learningData.find(l => String(l.id) === String(lessonId));
+        if (!lesson) return;
+        const newTitle = prompt('Uprav název super lekce:', lesson.title);
+        if (newTitle === null) return; // zrušeno
+        const newDesc = prompt('Uprav popis (může být prázdný):', lesson.description || '');
+        try {
+            await fetch(`/api/super-lessons/${lessonId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: newTitle.trim(),
+                    description: newDesc
+                })
+            });
+            await loadFromServer(true);
+        } catch (err) {
+            console.error(err);
+            alert('Nepodařilo se uložit změny super lekce.');
+        }
+    }
+
+    async function deleteSuperLesson(lessonId) {
+        const lesson = learningData.find(l => String(l.id) === String(lessonId));
+        if (!lesson) return;
+        if (!confirm(`Opravdu smazat super lekci "${lesson.title}" včetně všech oddělení a lekcí?`)) return;
+        try {
+            await fetch(`/api/super-lessons/${lessonId}`, { method: 'DELETE' });
+            if (activeLessonId === lessonId) {
+                activeLessonId = null;
+            }
+            await loadFromServer(true);
+        } catch (err) {
+            console.error(err);
+            alert('Mazání super lekce selhalo.');
+        }
+    }
+
+    // 2. Přidání Oddělení
+    async function addSection() {
+        const titleInput = document.getElementById('sec-title');
+        if(!titleInput.value.trim()) { alert('Vyplňte název oddělení!'); return; }
+
+        const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
+        if (!lesson) return;
+
+        try {
+            await fetch('/api/sections', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lessonId: lesson.id,
+                    title: titleInput.value
+                })
+            });
+            titleInput.value = '';
+            await loadFromServer(true);
+        } catch (err) {
+            console.error(err);
+            alert('Nepodařilo se přidat oddělení.');
+        }
+    }
+
+    // 2b. Editace a mazání Oddělení
+    async function editSection(sectionId) {
+        const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
+        if (!lesson) return;
+        const section = lesson.sections.find(s => String(s.id) === String(sectionId));
+        if (!section) return;
+        const newTitle = prompt('Uprav název oddělení:', section.title);
+        if (newTitle === null) return;
+        const trimmedTitle = newTitle.trim();
+        if (!trimmedTitle) return;
+        try {
+            await fetch(`/api/sections/${sectionId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: trimmedTitle })
+            });
+            await loadFromServer(true);
+        } catch (err) {
+            console.error(err);
+            alert('Nepodařilo se upravit oddělení.');
+        }
+    }
+
+    async function deleteSection(sectionId) {
+        const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
+        if (!lesson) return;
+        const section = lesson.sections.find(s => String(s.id) === String(sectionId));
+        if (!section) return;
+        if (!confirm(`Opravdu smazat oddělení "${section.title}" včetně všech lekcí?`)) return;
+        try {
+            await fetch(`/api/sections/${sectionId}`, { method: 'DELETE' });
+            await loadFromServer(true);
+        } catch (err) {
+            console.error(err);
+            alert('Mazání oddělení selhalo.');
+        }
+    }
+
+    // 3. Přidání lekce -> přesměrování do Investigo formuláře s sectionId
+    function addExercise(sectionId) {
+        // otevři Investigo s parametrem sectionId, ať formulář ví, do které sekce patří
+        const url = `http://localhost:3000/?sectionId=${encodeURIComponent(sectionId)}`;
+        window.open(url, '_blank');
+    }
+
+    // 3b. Editace a mazání Lekcí
+    function editExercise(sectionId, exerciseId) {
+        const lesson = learningData.find(l => l.id === activeLessonId);
+        if (!lesson) return;
+        const section = lesson.sections.find(s => s.id === sectionId);
+        if (!section) return;
+        const exercise = section.exercises.find(e => String(e.id) === String(exerciseId));
+        if (!exercise) return;
+        const newLabel = prompt('Uprav znak:', exercise.label);
+        if (newLabel === null) return;
+        const trimmedLabel = newLabel.trim();
+        if (trimmedLabel) {
+            exercise.label = trimmedLabel;
+        }
+        const newId = prompt('Uprav VLASTNÍ ID (musí být jedinečné v rámci oddělení):', exercise.id);
+        if (newId === null) {
+            // pokud zrušíš změnu ID, ponecháme jen změnu labelu
+        } else {
+            const trimmedId = newId.trim();
+            if (trimmedId) {
+                exercise.id = trimmedId;
+            }
+        }
+        renderApp();
+    }
+
+    function deleteExercise(sectionId, exerciseId) {
+        const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
+        if (!lesson) return;
+        const section = lesson.sections.find(s => String(s.id) === String(sectionId));
+        if (!section) return;
+        const exercise = section.exercises.find(e => String(e.id) === String(exerciseId));
+        if (!exercise) return;
+        if (!confirm(`Opravdu smazat lekci "${exercise.label}" (ID: ${exercise.id})?`)) return;
+        section.exercises = section.exercises.filter(e => e.id !== exerciseId);
+        renderApp();
+    }
+
+    // 4. Export do konzole (pro debug)
+    function exportData() {
+        console.clear();
+        console.log("--- VAŠE DATA (JSON) ---");
+        console.log(JSON.stringify(learningData, null, 2));
+        console.log("------------------------");
+        alert("Data byla vypsána do konzole prohlížeče (Stiskni F12 -> Console)");
+    }
+
+    // 5. Načtení ze serveru (primární zdroj pravdy)
+    async function loadFromServer(keepActive = false) {
+        if (isLoading) return;
+        isLoading = true;
+        try {
+            const res = await fetch('/api/data');
+            if (!res.ok) throw new Error('Chyba při načítání dat ze serveru');
+            const data = await res.json();
+            learningData = (Array.isArray(data) ? data : []).map(l => ({
+                ...l,
+                id: String(l.id),
+                sections: (l.sections || []).map(s => ({
+                    ...s,
+                    id: String(s.id),
+                    exercises: s.exercises || []
+                }))
+            }));
+            if (keepActive && activeLessonId) {
+                const stillExists = learningData.some(l => l.id === activeLessonId);
+                if (!stillExists) activeLessonId = null;
+            } else {
+                activeLessonId = null;
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Nepodařilo se načíst data ze serveru.');
+        } finally {
+            isLoading = false;
+            renderApp();
+        }
+    }
+
+    // --- RENDER ---
+
+    function renderApp() {
+        const root = document.getElementById('app-root');
+        
+        if (activeLessonId === null) {
+            // ---> ZOBRAZIT HLAVNÍ MENU
+            let html = `
+                <div class="header">Admin: Strom Učení</div>
+                <div class="content">
+                    
+                    <div class="form-box">
+                        <span class="label">Nová Super Lekce:</span>
+                        <input type="text" id="sl-title" placeholder="Název (např. Základy)">
+                        <input type="text" id="sl-desc" placeholder="Popis">
+                        <button class="btn-add" onclick="addSuperLesson()">+ PŘIDAT SUPER LEKCI</button>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    `;
+
+            learningData.forEach(lesson => {
+                html += `
+                    <div class="card" onclick="activeLessonId = '${lesson.id}'; renderApp()">
+                        <div class="card-title">${lesson.title}</div>
+                        <div class="card-desc">${lesson.description || ''}</div>
+                        <div style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
+                            <div class="card-hint">Klikni pro otevření →</div>
+                            <div>
+                                <button class="btn-edit btn-small" onclick="event.stopPropagation(); editSuperLesson('${lesson.id}')">Upravit</button>
+                                <button class="btn-delete btn-small" onclick="event.stopPropagation(); deleteSuperLesson('${lesson.id}')">Smazat</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    <div class="divider"></div>
+                    <button class="btn-export" onclick="exportData()">EXPORT DATA DO KONZOLE</button>
+                    <button class="btn-nav" onclick="loadFromServer(true)">ZNOVU NAČÍST ZE SERVERU</button>
+                </div>
+            `;
+            root.innerHTML = html;
+
+        } else {
+            // ---> ZOBRAZIT DETAIL LEKCE
+            const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
+            
+            let html = `
+                <div class="nav-bar">
+                    <button class="back-btn" onclick="activeLessonId = null; renderApp()">← ZPĚT</button>
+                    <div class="nav-title">${lesson.title}</div>
+                </div>
+                <div class="content">
+
+                    <div class="form-box">
+                        <span class="label">Přidat Oddělení (Sekci):</span>
+                        <input type="text" id="sec-title" placeholder="Název (např. Zvířata)">
+                        <button class="btn-add" onclick="addSection()">+ PŘIDAT ODDĚLENÍ</button>
+                    </div>
+
+                    `;
+
+            lesson.sections.forEach(section => {
+                html += `
+                    <div class="section-container">
+                        <div class="section-header">
+                            <span class="section-badge">${section.title}</span>
+                            <div style="margin-top:8px;">
+                                <button class="btn-edit btn-small" onclick="editSection('${section.id}')">Upravit oddělení</button>
+                                <button class="btn-delete btn-small" onclick="deleteSection('${section.id}')">Smazat oddělení</button>
+                            </div>
+                        </div>
+
+                        <div id="list-${section.id}">
+                `;
+
+                section.exercises.forEach(ex => {
+                    html += `
+                        <div class="exercise-item">
+                            <div class="ex-circle">${ex.label}</div>
+                            <div style="flex:1;">
+                                <div class="ex-id">ID: ${ex.id}</div>
+                            </div>
+                            <div>
+                                <button class="btn-edit btn-small" onclick="editExercise('${section.id}', '${ex.id}')">✎</button>
+                                <button class="btn-delete btn-small" onclick="deleteExercise('${section.id}', '${ex.id}')">✕</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                        
+                        <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:10px;">
+                            <span class="label" style="font-size:11px; color:#aaa;">Nová lekce (otevře Investigo):</span>
+                            <div class="row">
+                                <input type="text" disabled placeholder="Znak" style="flex:1; opacity:0.5;">
+                                <input type="text" disabled placeholder="VLASTNÍ ID" style="flex:3; opacity:0.5;">
+                            </div>
+                            <button class="btn-nav btn-small" onclick="addExercise('${section.id}')">+ Přidat lekci v Investigo</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            root.innerHTML = html;
+        }
+    }
+
+    // První spuštění – načti data ze serveru (pokud běží)
+    window.addEventListener('load', loadFromServer);
+
+</script>
+
+</body>
+</html>
