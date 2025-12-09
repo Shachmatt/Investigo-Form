@@ -183,7 +183,12 @@
 
 <script>
     // --- STAV APLIKACE ---
-    const INVESTIGO_BASE_URL = window.INVESTIGO_BASE_URL || window.location.origin;
+    // URL for the main Investigo form service
+    // In production: use Render URL, in development: use localhost:3000
+    const INVESTIGO_BASE_URL = window.INVESTIGO_BASE_URL || 
+        (window.location.hostname.includes('render.com') 
+            ? 'https://investigo-form.onrender.com' 
+            : 'http://localhost:3000');
     let learningData = [];
     let activeLessonId = null;
     let isLoading = false;
@@ -321,7 +326,11 @@
     function addExercise(sectionId) {
         // otevři Investigo s parametrem sectionId, ať formulář ví, do které sekce patří
         const url = `${INVESTIGO_BASE_URL}/?sectionId=${encodeURIComponent(sectionId)}`;
-        window.open(url, '_blank');
+        console.log('Opening Investigo form at:', url);
+        const newWindow = window.open(url, '_blank');
+        if (!newWindow) {
+            alert('Pop-up blokován! Povolte pop-up okna pro tento web a zkuste to znovu.');
+        }
     }
 
     // 3b. Editace a mazání Lekcí
