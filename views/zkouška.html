@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <title>Investigo Lekce – Generátor</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; background: #f9f9f9; }
+    #lesson { background: white; padding: 2em; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
+    .question { margin-bottom: 1em; }
+    button { margin-top: 1em; padding: 0.5em 1em; background: #850F8D; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .option { display: block; margin: 0.5em 0; }
+    .hidden { display: none; }
+    .timer { font-weight: bold; margin-top: 0.5em; }
+  </style>
+</head>
+<body>
+  <h1>Investigo – Spusť lekci ze souboru</h1>
+  <input type="file" id="fileInput" accept=".json">
+  <div id="lesson" class="hidden"></div>
+
+  <script>
+    let data, current = 0, score = 0, timerInterval;
+
+    document.getElementById('fileInput').addEventListener('change', e => {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        data = JSON.parse(evt.target.result);
+        current = 0; score = 0;
+        document.getElementById('lesson').classList.remove('hidden');
+        showExercise();
+      }
+      reader.readAsText(e.target.files[0]);
+    });
+
+    function showExercise() {
+      clearInterval(timerInterval);
+      const l = document.getElementById('lesson');
+      l.innerHTML = '';
+      if (current === 0) {
+        l.innerHTML += <p><strong>${data.intro}</strong></p>;
+      }
+
+      if (current >= data.exercises.length) {
+        l.innerHTML = `<h2>Lekce dokončena!</h2>
+        <p>
+            ${data.bot.outro.replace('{score}', score).replace('{total}', data.exercises.length)}
+        </p>`;
+        return;
+      }
+
+      const ex = data.exercises[current];
+      l.innerHTML += <p><em>${ex.bot_before || data.bot.beforeExercise || ''}</em></p>;
+      l.innerHTML += <div class="question"><strong>${ex.question}</strong></div>;
+
+      if (ex.type === 'single_choice') {
+        ex.options.forEach((opt, i) => {
+          l.innerHTML += <label class="option"><input type="radio" name="answer" value="${i}"> ${opt}</input></label>;
+        });
+        l.innerHTML += <button onclick="submitAnswer()">Odpovědět</button>;
+      } else {
+        l.innerHTML += <p>[Tento typ cvičení ještě není implementován]</p>;
+      }
+
+      if (ex.time_limit) {
+        let time = ex.time_limit;
+        const timer = document.createElement('div');
+        timer.className = 'timer';
+        timer.textContent = `Čas: ${time}s`;
+        l.appendChild(timer);
+        timerInterval = setInterval(() => {
+          time--;
+          timer.textContent = `Čas: ${time}s`;
+          if (time <= 0) {
+            clearInterval(timerInterval);
+            submitAnswer(true);
+          }
+        }, 1000);
+      }
+    }
+
+    function submitAnswer(timeout = false) {
+      clearInterval(timerInterval);
+      const ex = data.exercises[current];
+      const selected = document.querySelector('input[name="answer"]:checked');
+      const userAnswer = selected ? parseInt(selected.value) : null;
+      let correct = false;
+
+      if (!timeout && userAnswer !== null) {
+        correct = userAnswer === ex.correct;
+        if (correct) score++;
+      }
+
+      const feedback = document.createElement('div');
+      feedback.innerHTML = <p><em>${correct ? (ex.bot_after || data.bot.afterCorrect) : (data.bot.afterWrong)}</em></p>;
+
+      if (ex.show_explanation_immediately) {
+        feedback.innerHTML += <p><strong>Vysvětlení:</strong> ${ex.explanation}</p>;
+      }
+
+      document.getElementById('lesson').appendChild(feedback);
+      const btn = document.createElement('button');
+      btn.textContent = 'Další';
+      btn.onclick = () => { current++; showExercise(); };
+      document.getElementById('lesson').appendChild(btn);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Investigo - Lekce Akcie &amp; Index</title>
+  <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #F8F9D7 0%, #E49BFF 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(133, 15, 141, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #850F8D 0%, #C738BD 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: #F8F9D7;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+
+        .section {
+            padding: 30px;
+            border-bottom: 2px solid #E49BFF;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        /* AI Průvodce */
+        .ai-guide {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: linear-gradient(135deg, #E49BFF 0%, #F8F9D7 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            background: #850F8D;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            color: white;
+            box-shadow: 0 5px 15px rgba(133, 15, 141, 0.3);
+        }
+
+        .guide-text {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        /* Mikro-lekce */
+        .lesson-content {
+            background: #F8F9D7;
+            padding: 25px;
+            border-radius: 15px;
+            font-size: 1.2em;
+            line-height: 1.6;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .lesson-content strong {
+            color: #850F8D;
+        }
+
+        /* Interaktivní otázka */
+        .question-container {
+            text-align: center;
+        }
+
+        .question {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #850F8D;
+            margin-bottom: 25px;
+        }
+
+        .answers {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .answer-btn {
+            padding: 20px;
+            background: white;
+            border: 3px solid #E49BFF;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+            text-align: left;
+        }
+
+        .answer-btn:hover {
+            background: #E49BFF;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .answer-btn.correct {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+
+        .answer-btn.incorrect {
+            background: #f44336;
+            color: white;
+            border-color: #f44336;
+        }
+
+        .feedback {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .feedback.correct {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .feedback.incorrect {
+            background: #f44336;
+            color: white;
+        }
+
+        /* Výpočetní scénář */
+        .calculation {
+            text-align: center;
+        }
+
+        .calc-scenario {
+            background: #E49BFF;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+
+        .calc-input {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .calc-input input {
+            padding: 15px;
+            font-size: 1.2em;
+            border: 3px solid #C738BD;
+            border-radius: 10px;
+            text-align: center;
+            width: 120px;
+        }
+
+        .calc-btn {
+            padding: 15px 30px;
+            background: #850F8D;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        .calc-btn:hover {
+            background: #C738BD;
+            transform: translateY(-2px);
+        }
+
+        .calc-result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .calc-result.correct {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .calc-result.incorrect {
+            background: #f44336;
+            color: white;
+        }
+
+        /* Minihra */
+        .game-container {
+            text-align: center;
+        }
+
+        .game-card {
+            background: white;
+            border: 3px solid #E49BFF;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #850F8D;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .game-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .game-btn {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        /* Styly pro akcie */
+        .game-btn.stock {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .game-btn.not-stock {
+            background: #f44336;
+            color: white;
+        }
+
+        /* Styly pro indexy */
+        .game-btn.index {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .game-btn.not-index {
+            background: #f44336;
+            color: white;
+        }
+
+        .game-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .game-feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .game-score {
+            font-size: 1.2em;
+            color: #850F8D;
+            margin-bottom: 20px;
+        }
+        .drag-container {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.drag-area {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.drop-zone {
+    width: 160px;
+    height: 60px;
+    border: 2px dashed #850F8D;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3e7fb;
+    font-weight: bold;
+}
+
+.arrow {
+    font-size: 2em;
+    color: #850F8D;
+}
+
+.draggable-items {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.draggable-item {
+    background: #fff;
+    border: 2px solid #C738BD;
+    border-radius: 10px;
+    padding: 10px 15px;
+    cursor: grab;
+    user-select: none;
+    font-weight: bold;
+}
+
+.draggable-item.placed {
+    opacity: 0.5;
+}
+
+.drag-feedback {
+    margin-top: 15px;
+    font-weight: bold;
+    text-align: center;
+    display: none;
+}
+
+.drag-feedback.correct {
+    color: #4CAF50;
+}
+
+.drag-feedback.incorrect {
+    color: #f44336;
+}
+
+
+        /* Investiční simulace */
+        .simulation-container {
+            text-align: center;
+        }
+
+        .simulation-scenario {
+            background: #E49BFF;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+
+        .investment-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .investment-option {
+            background: white;
+            border: 3px solid #E49BFF;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .investment-option:hover {
+            background: #F8F9D7;
+            transform: translateY(-2px);
+        }
+
+        .investment-option.selected {
+            background: #850F8D;
+            color: white;
+            border-color: #850F8D;
+        }
+
+        .investment-option h4 {
+            color: #850F8D;
+            margin-bottom: 10px;
+        }
+
+        .investment-option.selected h4 {
+            color: white;
+        }
+
+        .simulate-btn {
+            padding: 15px 40px;
+            background: #850F8D;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .simulate-btn:hover {
+            background: #C738BD;
+            transform: translateY(-2px);
+        }
+
+        .simulate-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .simulation-result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .simulation-result.good {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .simulation-result.bad {
+            background: #f44336;
+            color: white;
+        }
+
+        .simulation-result.neutral {
+            background: #FF9800;
+            color: white;
+        }
+
+        /* Shrnutí */
+        .summary {
+            background: linear-gradient(135deg, #850F8D 0%, #C738BD 100%);
+            color: white;
+            text-align: center;
+            padding: 40px;
+            margin: -30px -30px 0 -30px;
+        }
+
+        .xp-award {
+            font-size: 2em;
+            font-weight: bold;
+            color: #F8F9D7;
+            margin-top: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .completion-badge {
+            display: inline-block;
+            background: #F8F9D7;
+            color: #850F8D;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Responzivní design */
+        @media (max-width: 600px) {
+            .answers {
+                grid-template-columns: 1fr;
+            }
+            
+            .game-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .ai-guide {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .investment-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<body>
+
+<!-- === FUNKČNÍ LEKCE 1: AKCIE === -->
+<section id="lekce-akcie">
+  <div class="container">
+
+    <!-- Header s progress barem -->
+    <div class="header">
+      <h1>Co jsou akcie?</h1>
+      <p>Lekce 1 - Investigo</p>
+      <div class="progress-bar">
+        <div class="progress" id="progressBar1"></div>
+      </div>
+    </div>
+
+    <!-- AI Průvodce -->
+    <div class="section">
+      <div class="ai-guide">
+        <div class="avatar">🤖</div>
+        <div class="guide-text">
+          <h3>Vítej v investičním světě! 🚀</h3>
+          <p>Dnes se naučíme, co jsou akcie a jak fungují. Připrav se na interaktivní zábavu plnou her a simulací!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mikro-lekce -->
+    <div class="section">
+      <h2>🏢 Co jsou akcie?</h2>
+      <div class="lesson-content">
+        <strong>Akcie = vlastnictví části firmy.</strong> Když koupíš akcii, staneš se spolumajitelem! 🤝<br/><br/>
+        Představ si firmu jako dort. Akcie jsou kousky toho dortu. Čím víc kousků máš, tím větší jsi majitel! 🎂<br/><br/>
+        Například pokud Apple má 1000 akcií a ty máš 10, vlastníš 1% celé firmy!
+      </div>
+    </div>
+
+    <!-- Interaktivní otázka -->
+    <div class="section">
+      <h2>🤔 Otázka na zamyšlení</h2>
+      <div class="question-container">
+        <div class="question">Co ti dává akcie?</div>
+        <div class="answers">
+          <div class="answer-btn" onclick="checkAnswer1(this, false)"><strong>A)</strong> Záruku zisku</div>
+          <div class="answer-btn" onclick="checkAnswer1(this, true)"><strong>B)</strong> Vlastnictví části firmy</div>
+          <div class="answer-btn" onclick="checkAnswer1(this, false)"><strong>C)</strong> Právo řídit firmu</div>
+          <div class="answer-btn" onclick="checkAnswer1(this, false)"><strong>D)</strong> Slevy na produkty</div>
+        </div>
+        <div class="feedback" id="questionFeedback1"></div>
+      </div>
+    </div>
+
+    <!-- Minihra -->
+    <div class="section">
+      <h2>🎮 Akcie nebo ne?</h2>
+      <div class="game-container">
+        <div class="game-score">Skóre: <span id="gameScore1">0</span>/3</div>
+        <div class="game-card" id="gameCard1"></div>
+        <div class="game-buttons">
+          <button class="game-btn stock" onclick="gameAnswer1(true)">🏢 Akcie</button>
+          <button class="game-btn not-stock" onclick="gameAnswer1(false)">❌ Není akcie</button>
+        </div>
+        <div class="game-feedback" id="gameFeedback1"></div>
+      </div>
+    </div>
+
+    <!-- Shrnutí -->
+    <div class="summary">
+      <h2>🎉 Skvělá práce!</h2>
+      <p>Dnes ses naučil, co jsou <strong>akcie</strong> - vlastnictví části firmy!</p>
+      <p>Akcie = podíl na firmě. Jsi spolumajitel s dalšími akcionáři!</p>
+      <div class="completion-badge">🏆 Lekce dokončena!</div>
+    </div>
+  </div>
+</section>
+<body>
+   
+    <hr style="margin: 50px 0; border: 3px dashed #850F8D;"/>
+
+    <!-- Lekce 2: Index -->
+    <section id="lekce-index">
+        <div class="container">
+            <!-- Header s progress barem -->
+            <div class="header">
+                <h1>Co je index?</h1>
+                <p>Lekce 2 - Investigo</p>
+                <div class="progress-bar">
+                    <div class="progress" id="progressBar2"></div>
+                </div>
+            </div>
+
+            <!-- AI Průvodce -->
+            <div class="section">
+                <div class="ai-guide">
+                    <div class="avatar">🤖</div>
+                    <div class="guide-text">
+                        <h3>Skvělé! Dokončujeme sérii! 🎯</h3>
+                        <p>Dnes si povíme o indexech - geniálním nástroji, který ti pomůže sledovat celé trhy najednou. Připrav se na závěrečnou lekci plnou praktických simulací!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mikro-lekce -->
+            <div class="section">
+                <h2>📊 Co je index?</h2>
+                <div class="lesson-content">
+                    <strong>Index sleduje vývoj celé skupiny akcií.</strong> Je to jako průměr z více akcií najednou! 📈
+                    <br/><br/>
+                    Představ si index jako "košík" plný různých akcií. Místo sledování každé akcie zvlášť, sleduješ jen jeden košík! 🧺
+                    <br/><br/>
+                    Například <strong>S&P 500</strong> sleduje 500 největších amerických firem najednou.
+                </div>
+            </div>
+
+            <!-- Interaktivní otázka -->
+            <div class="section">
+                <h2>🤔 Otázka na zamyšlení</h2>
+                <div class="question-container">
+                    <div class="question">K čemu slouží akciový index?</div>
+                    <div class="answers">
+                        <div class="answer-btn" onclick="checkAnswer2(this, true)">
+                            <strong>A)</strong> Měří výkon trhu
+                        </div>
+                        <div class="answer-btn" onclick="checkAnswer2(this, false)">
+                            <strong>B)</strong> Určuje cenu jednotlivých akcií
+                        </div>
+                        <div class="answer-btn" onclick="checkAnswer2(this, false)">
+                            <strong>C)</strong> Říká, kdy koupit akcie
+                        </div>
+                        <div class="answer-btn" onclick="checkAnswer2(this, false)">
+                            <strong>D)</strong> Zaručuje zisk
+                        </div>
+                    </div>
+                    <div class="feedback" id="questionFeedback2"></div>
+                </div>
+            </div>
+
+           
+
+            <!-- Minihra -->
+            <div class="section">
+                <h2>🎮 Index nebo akcie?</h2>
+                <div class="game-container">
+                    <div class="game-score">Skóre: <span id="gameScore2">0</span>/4</div>
+                    <div class="game-card" id="gameCard2"></div>
+                    <div class="game-buttons">
+                        <button class="game-btn index" onclick="gameAnswer2(true)">📊 Index</button>
+                        <button class="game-btn not-index" onclick="gameAnswer2(false)">🏢 Akcie</button>
+                    </div>
+                    <div class="game-feedback" id="gameFeedback2"></div>
+                </div>
+            </div>
+
+            <!-- Investiční simulace -->
+            <div class="section">
+                <h2>🎯 Investiční rozhodnutí</h2>
+                <div class="simulation-container">
+                    <div class="simulation-scenario">
+                        💰 Máš 5000 Kč na investici. Jak je využiješ?
+                    </div>
+                    <div class="investment-options">
+                        <div class="investment-option" onclick="selectOption(this, 'stocks')">
+                            <h4>🏢 Jednotlivé akcie</h4>
+                            <p>Koupit akcie 2-3 konkrétních firem</p>
+                        </div>
+                        <div class="investment-option" onclick="selectOption(this, 'index')">
+                            <h4>📊 Index fond</h4>
+                            <p>Investovat do celého indexu</p>
+                        </div>
+                        <div class="investment-option" onclick="selectOption(this, 'savings')">
+                            <h4>🏦 Spořicí účet</h4>
+                            <p>Nechat peníze na spořáku</p>
+                        </div>
+                        <div class="investment-option" onclick="selectOption(this, 'lottery')">
+                            <h4>🎲 Loterie</h4>
+                            <p>Koupit losy za celou částku</p>
+                        </div>
+                    </div>
+                    <button class="simulate-btn" disabled onclick="simulateInvestment()">Simulovat výsledek</button>
+                    <div class="simulation-result" id="simulationResult"></div>
+                </div>
+            </div>
+
+            <!-- Shrnutí -->
+            <div class="summary">
+                <h2>🎉 Fantastické!</h2>
+                <p>Dnes ses naučil o <strong>indexech</strong> - skvělém nástroji pro sledování celých trhů!</p>
+                <p>Index = košík různých akcií. Místo rizika jedné firmy máš rozložené riziko!</p>
+                <div class="completion-badge">🏆 Série dokončena!</div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // ========== LEKCE 1: AKCIE ==========
+        
+        // Globální proměnné pro lekci 1
+        let questionAnswered1 = false;
+        let calcAnswered1 = false;
+        let gameScore1 = 0;
+        let gameRound1 = 0;
+
+        // Herní data pro lekci 1
+        const gameItems1 = [
+            { name: "Apple", isStock: true, explanation: "Apple je firma, takže má akcie!" },
+            { name: "Chleba", isStock: false, explanation: "Chleba je produkt, ne firma s akciemi." },
+            { name: "Microsoft", isStock: true, explanation: "Microsoft je velká technologická firma s akciemi." },
+            { name: "Zlatá mince", isStock: false, explanation: "Zlato je komodita, ne akcie firmy." },
+            { name: "Tesla", isStock: true, explanation: "Tesla je automobilka s akciemi na burze." },
+            { name: "Hamburger", isStock: false, explanation: "Hamburger je jídlo, ne investiční instrument." }
+        ];
+
+        let shuffledItems1 = [...gameItems1].sort(() => Math.random() - 0.5);
+        
+        // Funkce pro aktualizaci progress baru - lekce 1
+        function updateProgress1() {
+            const totalSections = 4; // otázka, kalkulace, hra, shrnutí
+            let completedSections = 0;
+            
+            if (questionAnswered1) completedSections++;
+            if (calcAnswered1) completedSections++;
+            if (gameRound1 >= 3) completedSections++;
+            completedSections++; // shrnutí je vždy aktivní
+            
+            const progress = (completedSections / totalSections) * 100;
+            document.getElementById('progressBar1').style.width = progress + '%';
+        }
+
+        // Funkce pro kontrolu odpovědi - lekce 1
+        function checkAnswer1(button, isCorrect) {
+            if (questionAnswered1) return;
+            
+            const buttons = document.querySelectorAll('#lekce-akcie .answer-btn');
+            const feedback = document.getElementById('questionFeedback1');
+            
+            buttons.forEach(btn => btn.style.pointerEvents = 'none');
+            
+            if (isCorrect) {
+                button.classList.add('correct');
+                feedback.className = 'feedback correct';
+                feedback.innerHTML = '🎉 Správně! Akcie ti dává vlastnictví části firmy. Jsi spolumajitelem!';
+            } else {
+                button.classList.add('incorrect');
+                feedback.className = 'feedback correct';
+                feedback.innerHTML = '❌ Správná odpověď je B) Vlastnictví části firmy. Akcie = podíl na firmě!';
+                
+                // Zvýrazni správnou odpověď
+                buttons.forEach(btn => {
+                    if (btn.textContent.includes('B) Vlastnictví části firmy')) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+            
+            feedback.style.display = 'block';
+            questionAnswered1 = true;
+            updateProgress1();
+        }
+
+        // Funkce pro kontrolu výpočtu - lekce 1
+        function checkCalculation1() {
+            if (calcAnswered1) return;
+            
+            const input = document.getElementById('calcInput1');
+            const result = document.getElementById('calcResult1');
+            const answer = parseFloat(input.value);
+            
+            if (answer === 1) {
+                result.className = 'calc-result correct';
+                result.innerHTML = '🎉 Výborně! 10 ÷ 1000 = 0,01 = 1%';
+            } else {
+                result.className = 'calc-result incorrect';
+                result.innerHTML = '❌ Správná odpověď je 1%<br>Výpočet: 10 ÷ 1000 = 0,01 = 1%';
+            }
+            
+            result.style.display = 'block';
+            calcAnswered1 = true;
+            updateProgress1();
+        }
+
+        // Funkce pro hru - lekce 1
+        function gameAnswer1(playerAnswer) {
+            if (gameRound1 >= 3) return;
+            
+            const currentItem = shuffledItems1[gameRound1];
+            const feedback = document.getElementById('gameFeedback1');
+            const isCorrect = playerAnswer === currentItem.isStock;
+            
+            if (isCorrect) {
+                gameScore1++;
+                feedback.className = 'game-feedback correct';
+                feedback.innerHTML = '✅ Správně! ' + currentItem.explanation;
+            } else {
+                feedback.className = 'game-feedback incorrect';
+                feedback.innerHTML = '❌ Špatně! ' + currentItem.explanation;
+            }
+            
+            feedback.style.display = 'block';
+            document.getElementById('gameScore1').textContent = gameScore1;
+            
+            gameRound1++;
+            
+            setTimeout(() => {
+                if (gameRound1 < 3) {
+                    nextGameRound1();
+                } else {
+                    endGame1();
+                }
+            }, 2000);
+        }
+
+        function nextGameRound1() {
+            document.getElementById('gameCard1').textContent = shuffledItems1[gameRound1].name;
+            document.getElementById('gameFeedback1').style.display = 'none';
+        }
+
+        function endGame1() {
+            const feedback = document.getElementById('gameFeedback1');
+            feedback.className = 'game-feedback correct';
+            feedback.innerHTML = 🎮 Hra dokončena! Skóre: ${gameScore1}/3<br>Teď už víš, jak rozpoznat akcie!;
+            feedback.style.display = 'block';
+            
+            // Deaktivuj tlačítka
+            document.querySelectorAll('#lekce-akcie .game-btn').forEach(btn => {
+                btn.style.pointerEvents = 'none';
+                btn.style.opacity = '0.5';
+            });
+            
+            updateProgress1();
+        }
+
+        // Inicializace hry - lekce 1
+        function initGame1() {
+            document.getElementById('gameCard1').textContent = shuffledItems1[0].name;
+            document.getElementById('gameScore1').textContent = gameScore1;
+        }
+
+        // ========== LEKCE 2: INDEX ==========
+        
+        // Globální proměnné pro lekci 2
+        let questionAnswered2 = false;
+        let gameScore2 = 0;
+        let gameRound2 = 0;
+        let simulationDone = false;
+        let selectedInvestment = null;
+
+        // Herní data pro lekci 2
+        const gameItems2 = [
+            { name: "S&P 500", isIndex: true, explanation: "S&P 500 sleduje 500 největších amerických firem!" },
+            { name: "Apple", isIndex: false, explanation: "Apple je jednotlivá firma, ne index." },
+            { name: "NASDAQ", isIndex: true, explanation: "NASDAQ je index technologických firem!" },
+            { name: "Microsoft", isIndex: false, explanation: "Microsoft je konkrétní firma s akciemi." },
+            { name: "Dow Jones", isIndex: true, explanation: "Dow Jones sleduje 30 velkých amerických firem!" },
+            { name: "Tesla", isIndex: false, explanation: "Tesla je automobilka, ne index." },
+            { name: "FTSE 100", isIndex: true, explanation: "FTSE 100 sleduje 100 největších britských firem!" }
+        ];
+
+        let shuffledItems2 = [...gameItems2].sort(() => Math.random() - 0.5);
+
+        // Funkce pro aktualizaci progress baru - lekce 2
+        function updateProgress2() {
+            const totalSections = 5; // otázka, kalkulace, hra, simulace, shrnutí
+            let completedSections = 0;
+            
+            if (questionAnswered2) completedSections++;
+            if (gameRound2 >= 4) completedSections++;
+            if (simulationDone) completedSections++;
+            completedSections++; // shrnutí je vždy aktivní
+            
+            const progress = (completedSections / totalSections) * 100;
+            document.getElementById('progressBar2').style.width = progress + '%';
+        }
+
+        // Funkce pro kontrolu odpovědi - lekce 2
+        function checkAnswer2(button, isCorrect) {
+            if (questionAnswered2) return;
+            
+            const buttons = document.querySelectorAll('#lekce-index .answer-btn');
+            const feedback = document.getElementById('questionFeedback2');
+            
+            buttons.forEach(btn => btn.style.pointerEvents = 'none');
+            
+            if (isCorrect) {
+                button.classList.add('correct');
+                feedback.className = 'feedback correct';
+                feedback.innerHTML = '🎉 Výborně! Index skutečně měří výkon celého trhu nebo skupiny akcií!';
+            } else {
+                button.classList.add('incorrect');
+                feedback.className = 'feedback correct';
+                feedback.innerHTML = '❌ Správná odpověď je A) Měří výkon trhu. Index ukazuje, jak si vede celá skupina akcií!';
+                
+                // Zvýrazni správnou odpověď
+                buttons.forEach(btn => {
+                    if (btn.textContent.includes('A) Měří výkon trhu')) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+            
+            feedback.style.display = 'block';
+            questionAnswered2 = true;
+            updateProgress2();
+        }
+
+
+       function gameAnswer2(playerAnswer) {
+    if (gameRound2 >= 4) return;
+    
+    const currentItem = shuffledItems2[gameRound2];
+    const feedback = document.getElementById('gameFeedback2');
+    const isCorrect = playerAnswer === currentItem.isIndex;
+    
+    if (isCorrect) {
+        gameScore2++;
+        feedback.className = 'game-feedback correct';
+        feedback.innerHTML = '✅ Správně! ' + currentItem.explanation;
+    } else {
+        feedback.className = 'game-feedback incorrect';
+        feedback.innerHTML = '❌ Špatně! ' + currentItem.explanation;
+    }
+    
+    feedback.style.display = 'block';
+    document.getElementById('gameScore2').textContent = gameScore2;
+    
+    gameRound2++;
+    
+    setTimeout(() => {
+        if (gameRound2 < 4) {
+            nextGameRound2(); // Změna názvu funkce
+        } else {
+            endGame2();
+        }
+    }, 2000);
+}
+
+function nextGameRound2() { // Změna názvu funkce
+    document.getElementById('gameCard2').textContent = shuffledItems2[gameRound2].name;
+    document.getElementById('gameFeedback2').style.display = 'none';
+}
+
+        function endGame2() {
+            const feedback = document.getElementById('gameFeedback2');
+            feedback.className = 'game-feedback correct';
+            feedback.innerHTML = 🎮 Hra dokončena! Skóre: ${gameScore2}/4<br>Teď už rozpoznáš indexy!;
+            feedback.style.display = 'block';
+            
+            // Deaktivuj tlačítka
+            document.querySelectorAll('#lekce-index .game-btn').forEach(btn => {
+                btn.style.pointerEvents = 'none';
+                btn.style.opacity = '0.5';
+            });
+            
+            updateProgress2();
+        }
+
+        // Funkce pro simulaci
+        function selectOption(element, type) {
+            // Zruš předchozí výběr
+            document.querySelectorAll('.investment-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Označ nový výběr
+            element.classList.add('selected');
+            selectedInvestment = type;
+            
+            // Aktivuj tlačítko
+            document.querySelector('.simulate-btn').disabled = false;
+        }
+
+        function simulateInvestment() {
+            if (!selectedInvestment || simulationDone) return;
+            
+            const result = document.getElementById('simulationResult');
+            let resultClass = '';
+            let resultText = '';
+            
+            switch(selectedInvestment) {
+                case 'index':
+                    resultClass = 'good';
+                    resultText = '🎉 Skvělá volba! Index fond ti dává:<br>• Rozložené riziko mezi stovky firem<br>• Nižší poplatky<br>• Dlouhodobý růst s trhem<br>• Méně stresu při investování';
+                    break;
+                case 'stocks':
+                    resultClass = 'neutral';
+                    resultText = '⚠ Rozumná volba, ale riziková:<br>• Veškeré riziko v 2-3 firmách<br>• Může se dařit skvěle nebo špatně<br>• Vyžaduje více znalostí<br>• Doporučujeme začít s indexy';
+                    break;
+                case 'savings':
+                    resultClass = 'neutral';
+                    resultText = '💤 Bezpečná, ale pomalá volba:<br>• Žádné riziko ztráty<br>• Velmi nízké zhodnocení (2-3% ročně)<br>• Inflace ti bude "ukrajovat" z hodnoty<br>• Pro dlouhodobé cíle nedostatečné';
+                    break;
+                case 'lottery':
+                    resultClass = 'bad';
+                    resultText = '🎲 Špatná volba! Loterie není investice:<br>• Pravděpodobnost výhry téměř nulová<br>• Matematicky zaručená ztráta<br>• Není to investiční nástroj<br>• Raději zkus indexové fondy!';
+                    break;
+            }
+            
+            result.className = simulation-result ${resultClass};
+            result.innerHTML = resultText;
+            result.style.display = 'block';
+            
+            // Deaktivuj tlačítko
+            document.querySelector('.simulate-btn').disabled = true;
+            document.querySelector('.simulate-btn').textContent = 'Simulace dokončena';
+            
+            simulationDone = true;
+            updateProgress2();
+        }
+
+        // Inicializace hry - lekce 2
+        function initGame2() {
+            document.getElementById('gameCard2').textContent = shuffledItems2[0].name;
+            document.getElementById('gameScore2').textContent = gameScore2;
+        }
+
+    
+      
+        // Umožní enter v kalkulačkách
+        document.addEventListener('DOMContentLoaded', function() {
+            const calcInput1 = document.getElementById('calcInput1');
+            const calcInput2 = document.getElementById('calcInput2');
+            
+            if (calcInput1) {
+                calcInput1.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        checkCalculation1();
+                    }
+                });
+            }
+            
+            if (calcInput2) {
+                calcInput2.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        checkCalculation2();
+                    }
+                });
+            }
+        });
+    </script>
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+    <div class="container">
+        <div class="header">
+            <h1>Dividenda a Burza</h1>
+            <p>Spojená lekce - Investigo</p>
+            <div class="progress-bar">
+                <div class="progress" id="progressBar"></div>
+            </div>
+        </div>
+
+        <!-- Lekce o dividendě -->
+        <div class="section">
+            <h2 style="color: #850F8D; margin-bottom: 20px; text-align: center;">💰 Co je dividenda?</h2>
+            <div class="lesson-content">
+                <strong>Dividenda je výplata části zisku firmy investorům.</strong> 
+                <br><br>
+                Představ si to takto: Když firma vydělá peníze, část si nechá pro sebe a část rozdá majitelům akcií jako odměnu. To je dividenda! 💸
+            </div>
+        </div>
+
+        <!-- Otázka o dividendě -->
+        <div class="section">
+            <h2 style="color: #850F8D; margin-bottom: 20px; text-align: center;">🤔 Otázka o dividendě</h2>
+            <div class="question-container">
+                <div class="question">Kdo dostává dividendu?</div>
+                <div class="answers">
+                    <div class="answer-btn" onclick="checkAnswer(this, false, 'dividend')">
+                        <strong>A)</strong> Všichni občané
+                    </div>
+                    <div class="answer-btn" onclick="checkAnswer(this, true, 'dividend')">
+                        <strong>B)</strong> Majitelé akcií
+                    </div>
+                    <div class="answer-btn" onclick="checkAnswer(this, false, 'dividend')">
+                        <strong>C)</strong> Manažeři firmy
+                    </div>
+                    <div class="answer-btn" onclick="checkAnswer(this, false, 'dividend')">
+                        <strong>D)</strong> Banky
+                    </div>
+                </div>
+                <div class="feedback" id="dividendFeedback"></div>
+            </div>
+        </div>
+
+        <!-- Drag & Drop -->
+        <div class="section">
+            <h2 style="color: #850F8D; margin-bottom: 20px; text-align: center;">🔄 Tok peněz - Seřaď správně</h2>
+            <div class="drag-container">
+                <div class="drag-area">
+                    <div class="drop-zone" id="step1">1. Krok</div>
+                    <div class="arrow">→</div>
+                    <div class="drop-zone" id="step2">2. Krok</div>
+                    <div class="arrow">→</div>
+                    <div class="drop-zone" id="step3">3. Krok</div>
+                    <div class="arrow">→</div>
+                    <div class="drop-zone" id="step4">4. Krok</div>
+                 
+                </div>
+                <div class="draggable-items">
+                    <div class="draggable-item" draggable="true" data-correct="1">Koupím akcie</div>
+                    <div class="draggable-item" draggable="true" data-correct="2">Firma vydělá zisk</div>
+                    <div class="draggable-item" draggable="true" data-correct="3">Firma vyplatí dividendu</div>
+                    <div class="draggable-item" draggable="true" data-correct="4">Dostanu peníze</div>
+                </div>
+                <div class="drag-feedback" id="dragFeedback"></div>
+            </div>
+        </div>
+
+        <!-- Hra dividenda -->
+        <div class="section">
+            <h2 style="color: #850F8D; margin-bottom: 20px; text-align: center;">🎮 Dividenda nebo ne?</h2>
+            <div class="game-container">
+                <div class="game-score">Skóre: <span id="dividendScore">0</span>/4</div>
+                <div class="game-card" id="dividendCard"></div>
+                <div class="game-buttons">
+                    <button class="game-btn dividend" onclick="dividendgameAnswer(true, 'dividend')">💰 Dividenda</button>
+                    <button class="game-btn not-dividend" onclick="dividendgameAnswer(false, 'dividend')">❌ Není dividenda</button>
+                </div>
+                <div class="game-feedback" id="dividendGameFeedback"></div>
+            </div>
+        </div>
+
+        <!-- Lekce o burze -->
+        <div class="section">
+            <h2 style="color: #850F8D; margin-bottom: 20px; text-align: center;">📈 Co je burza?</h2>
+            <div class="lesson-content">
+                <strong>Burza je trh, kde se obchodují akcie.</strong> Je to místo, kde se kupují a prodávají podíly ve firmách. 🏪
+                <br><br>
+                Představ si to jako obří tržiště - ale místo jablek a mrkve se tam prodávají kousky Applu a Tesly! 📱🚗
+            </div>
+        </div>
+
+        <!-- Otázka o burze -->
+        <div class="section">
+            <h2 style="color: #850F8D; margin-bottom: 20px; text-align: center;">🤔 Otázka o burze</h2>
+            <div class="question-container">
+                <div class="question">Co se na burze NEKUPUJE?</div>
+                <div class="answers">
+                    <div class="answer-btn" onclick="checkAnswer(this, false, 'stock')">
+                        <strong>A)</strong> Akcie Apple
+                    </div>
+                    <div class="answer-btn" onclick="checkAnswer(this, false, 'stock')">
+                        <strong>B)</strong> Akcie Microsoft
+                    </div>
+                    <div class="answer-btn" onclick="checkAnswer(this, true, 'stock')">
+                        <strong>C)</strong> Housky
+                    </div>
+                    <div class="answer-btn" onclick="checkAnswer(this, false, 'stock')">
+                        <strong>D)</strong> Akcie Tesla
+                    </div>
+                </div>
+                <div class="feedback" id="stockFeedback"></div>
+            </div>
+        </div>
+
+        <!-- Hra burza -->
+        <div class="section">
+            <h2 style="color: #850F8D; margin-bottom: 20px; text-align: center;">🎮 Burza nebo tržiště?</h2>
+            <div class="game-container">
+                <div class="game-score">Skóre: <span id="stockScore">0</span>/3</div>
+                <div class="game-card" id="stockCard"></div>
+                <div class="game-buttons">
+                    <button class="game-btn stock-exchange" onclick="dividendgameAnswer(true, 'stock')">📈 Burza</button>
+                    <button class="game-btn marketplace" onclick="dividendgameAnswer(false, 'stock')">🛒 Tržiště</button>
+                </div>
+                <div class="game-feedback" id="stockGameFeedback"></div>
+            </div>
+        </div>
+
+        <!-- Shrnutí -->
+        <div class="summary">
+            <h2>🎉 Skvělá práce!</h2>
+            <p>Dnes ses naučil o <strong>dividendách</strong> - výplatách ze zisku investorům.</p>
+            <p>A také o <strong>burze</strong> - trhu pro obchodování s akciemi.</p>
+            <div class="completion-badge">🏆 Lekce dokončena!</div>
+        </div>
+    </div>
+
+    <script>
+        // Globální proměnné
+        let dividendAnswered = false;
+        let stockAnswered = false;
+        let dragCompleted = false;
+        let dividendGameScore = 0;
+        let dividendGameRound = 0;
+        let stockGameScore = 0;
+        let stockGameRound = 0;
+        let placedItems = 0;
+
+        // Herní data
+        const dividendItems = [
+            { name: "Výplata zisku akcionářům", isDividend: true, explanation: "Přesně! To je definice dividendy." },
+            { name: "Úrok z vkladu v bance", isDividend: false, explanation: "Úrok je odměna za uložení peněz, ne dividenda." },
+            { name: "Mzda za práci", isDividend: false, explanation: "Mzda je odměna za práci, ne podíl ze zisku." },
+            { name: "Renta z nemovitosti", isDividend: false, explanation: "Renta je příjem z pronájmu, ne dividenda z akcií." }
+        ];
+
+        const stockItems = [
+            { name: "🍎 Prodej jablek", isStockExchange: false, explanation: "Jablka se prodávají na tržišti, ne na burze!" },
+            { name: "📱 Akcie Apple", isStockExchange: true, explanation: "Akcie se obchodují na burze!" },
+            { name: "🚗 Akcie Tesla", isStockExchange: true, explanation: "Akcie automobilky se obchodují na burze!" }
+        ];
+
+        let shuffledDividendItems = [...dividendItems].sort(() => Math.random() - 0.5);
+        let shuffledStockItems = [...stockItems].sort(() => Math.random() - 0.5);
+
+        // Funkce pro aktualizaci progress baru
+        function updateProgress() {
+            const totalSections = 6;
+            let completedSections = 0;
+            
+            if (dividendAnswered) completedSections++;
+            if (dragCompleted) completedSections++;
+            if (dividendGameRound >= 4) completedSections++;
+            if (stockAnswered) completedSections++;
+            if (stockGameRound >= 3) completedSections++;
+            completedSections++; // shrnutí
+            
+            const progress = (completedSections / totalSections) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        // Funkce pro kontrolu odpovědi
+        function checkAnswer(button, isCorrect, type) {
+            if ((type === 'dividend' && dividendAnswered) || (type === 'stock' && stockAnswered)) return;
+            
+            const buttons = button.parentElement.querySelectorAll('.answer-btn');
+            const feedbackId = type === 'dividend' ? 'dividendFeedback' : 'stockFeedback';
+            const feedback = document.getElementById(feedbackId);
+            
+            buttons.forEach(btn => btn.style.pointerEvents = 'none');
+            
+            if (isCorrect) {
+                button.classList.add('correct');
+                feedback.className = 'feedback correct';
+                if (type === 'dividend') {
+                    feedback.innerHTML = '🎉 Správně! Dividendu dostávají majitelé akcií jako podíl ze zisku!';
+                } else {
+                    feedback.innerHTML = '🎉 Správně! Housky se kupují v pekárně, ne na burze!';
+                }
+            } else {
+                button.classList.add('incorrect');
+                feedback.className = 'feedback correct';
+                if (type === 'dividend') {
+                    feedback.innerHTML = '❌ Správná odpověď je B) Majitelé akcií. Dividenda patří akcionářům!';
+                } else {
+                    feedback.innerHTML = '❌ Správná odpověď je C) Housky. Na burze se obchoduje jen s akciemi!';
+                }
+                
+                // Zvýrazni správnou odpověď
+                buttons.forEach(btn => {
+                    const correctText = type === 'dividend' ? 'B) Majitelé akcií' : 'C) Housky';
+                    if (btn.textContent.includes(correctText)) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+            
+            feedback.style.display = 'block';
+            if (type === 'dividend') {
+                dividendAnswered = true;
+            } else {
+                stockAnswered = true;
+            }
+            updateProgress();
+        }
+
+      // Funkce pro přidání drag posluchačů
+function addDragListeners(draggable) {
+    draggable.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', draggable.textContent);
+        e.dataTransfer.setData('correct', draggable.dataset.correct);
+        draggable.classList.add('dragging');
+    });
+
+    draggable.addEventListener('dragend', e => {
+        draggable.classList.remove('dragging');
+    });
+}
+
+// Funkce pro kontrolu drag & drop
+function checkDragDrop() {
+    const zones = document.querySelectorAll('.drop-zone');
+    let correct = 0;
+    
+    zones.forEach((zone, index) => {
+        if (zone.dataset.placed === String(index + 1)) {
+            correct++;
+        }
+    });
+    
+    const feedback = document.getElementById('dragFeedback');
+    
+    if (correct === 4) {
+        feedback.className = 'drag-feedback correct';
+        feedback.innerHTML = '🎉 Výborně! Správně jsi seřadil tok peněz u dividend!';
+        dragCompleted = true;
+        updateProgress();
+    } else {
+        feedback.className = 'drag-feedback incorrect';
+        feedback.innerHTML = ❌ Správně: ${correct}/4. Zkus to znovu!;
+        
+        // Reset pro nový pokus
+        setTimeout(() => {
+            resetDragDrop();
+        }, 2000);
+    }
+    
+    feedback.style.display = 'block';
+}
+
+// Funkce pro reset drag & drop
+function resetDragDrop() {
+    const zones = document.querySelectorAll('.drop-zone');
+    const draggableContainer = document.querySelector('.draggable-items');
+    
+    // Vyčisti zóny
+    zones.forEach((zone, index) => {
+        zone.textContent = (index + 1) + '. Krok';
+        zone.classList.remove('filled', 'wrong');
+        zone.dataset.filled = 'false';
+        delete zone.dataset.placed;
+    });
+    
+    // Vrať všechny položky zpět dolů
+    draggableContainer.innerHTML = `
+        <div class="draggable-item" draggable="true" data-correct="1">Koupím akcie</div>
+        <div class="draggable-item" draggable="true" data-correct="2">Firma vydělá zisk</div>
+        <div class="draggable-item" draggable="true" data-correct="3">Firma vyplatí dividendu</div>
+        <div class="draggable-item" draggable="true" data-correct="4">Dostanu peníze</div>
+    `;
+    
+    // Znovu přidej posluchače
+    const newDraggables = document.querySelectorAll('.draggable-item');
+    newDraggables.forEach(draggable => {
+        addDragListeners(draggable);
+    });
+    
+    placedItems = 0;
+    document.getElementById('dragFeedback').style.display = 'none';
+}
+
+// Hlavní inicializační funkce drag & drop
+function initDragDrop() {
+    const draggables = document.querySelectorAll('.draggable-item');
+    const dropZones = document.querySelectorAll('.drop-zone');
+    placedItems = 0;
+
+    // Přidej posluchače na všechny výrazy
+    draggables.forEach(draggable => {
+        addDragListeners(draggable);
+    });
+
+    dropZones.forEach(zone => {
+        zone.addEventListener('dragover', e => {
+            e.preventDefault();
+        });
+
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            const text = e.dataTransfer.getData('text/plain');
+            const correct = e.dataTransfer.getData('correct');
+            const zoneNumber = zone.id.replace('step', '');
+            
+            // Najdi a smaž původní draggable element
+            const originalItem = Array.from(document.querySelectorAll('.draggable-item'))
+                .find(item => item.textContent === text && item.dataset.correct === correct);
+            if (originalItem) {
+                originalItem.remove();
+            }
+
+            // Pokud už v zóně něco bylo → vrátit zpět dolů
+            if (zone.dataset.filled === 'true') {
+                const prevText = zone.textContent;
+                const prevCorrect = zone.dataset.placed;
+
+                const newItem = document.createElement('div');
+                newItem.className = 'draggable-item';
+                newItem.draggable = true;
+                newItem.textContent = prevText;
+                newItem.dataset.correct = prevCorrect;
+
+                document.querySelector('.draggable-items').appendChild(newItem);
+                addDragListeners(newItem);
+            } else {
+                placedItems++;
+            }
+
+            // Umístit nový výraz
+            zone.textContent = text;
+            zone.dataset.placed = correct;
+            zone.dataset.filled = 'true';
+
+            if (correct === zoneNumber) {
+                zone.classList.remove('wrong');
+                zone.classList.add('filled');
+            } else {
+                zone.classList.remove('filled');
+                zone.classList.add('wrong');
+            }
+
+            // Zkontroluj, jestli jsou všechny zóny zaplněné
+            const filledZones = document.querySelectorAll('.drop-zone[data-filled="true"]').length;
+            if (filledZones === 4) {
+                checkDragDrop();
+            }
+        });
+    });
+}
+
+
+        // Funkce pro hru
+        function dividendgameAnswer(playerAnswer, gameType) {
+            if (gameType === 'dividend') {
+                if (dividendGameRound >= 4) return;
+                
+                const currentItem = shuffledDividendItems[dividendGameRound];
+                const feedback = document.getElementById('dividendGameFeedback');
+                const isCorrect = playerAnswer === currentItem.isDividend;
+                
+                if (isCorrect) {
+                    dividendGameScore++;
+                    feedback.className = 'game-feedback correct';
+                    feedback.innerHTML = '✅ Správně! ' + currentItem.explanation;
+                } else {
+                    feedback.className = 'game-feedback incorrect';
+                    feedback.innerHTML = '❌ Špatně! ' + currentItem.explanation;
+                }
+                
+                feedback.style.display = 'block';
+                document.getElementById('dividendScore').textContent = dividendGameScore;
+                
+                dividendGameRound++;
+                
+                setTimeout(() => {
+                    if (dividendGameRound < 4) {
+                        nextDividendGameRound('dividend');
+                    } else {
+                        endGame('dividend');
+                    }
+                }, 2000);
+            } else {
+                if (stockGameRound >= 3) return;
+                
+                const currentItem = shuffledStockItems[stockGameRound];
+                const feedback = document.getElementById('stockGameFeedback');
+                const isCorrect = playerAnswer === currentItem.isStockExchange;
+                
+                if (isCorrect) {
+                    stockGameScore++;
+                    feedback.className = 'game-feedback correct';
+                    feedback.innerHTML = '✅ Správně! ' + currentItem.explanation;
+                } else {
+                    feedback.className = 'game-feedback incorrect';
+                    feedback.innerHTML = '❌ Špatně! ' + currentItem.explanation;
+                }
+                
+                feedback.style.display = 'block';
+                document.getElementById('stockScore').textContent = stockGameScore;
+                
+                stockGameRound++;
+                
+                setTimeout(() => {
+                    if (stockGameRound < 3) {
+                        nextDividendGameRound('stock');
+                    } else {
+                        endGame('stock');
+                    }
+                }, 2000);
+            }
+        }
+
+        function nextDividendGameRound(gameType) {
+            if (gameType === 'dividend') {
+                document.getElementById('dividendCard').textContent = shuffledDividendItems[dividendGameRound].name;
+                document.getElementById('dividendGameFeedback').style.display = 'none';
+            } else {
+                document.getElementById('stockCard').textContent = shuffledStockItems[stockGameRound].name;
+                document.getElementById('stockGameFeedback').style.display = 'none';
+            }
+        }
+
+        function endGame(gameType) {
+            if (gameType === 'dividend') {
+                const feedback = document.getElementById('dividendGameFeedback');
+                feedback.className = 'game-feedback correct';
+                feedback.innerHTML = 🎮 Hra dokončena! Skóre: ${dividendGameScore}/4<br>Teď už rozumíš dividendám!;
+                feedback.style.display = 'block';
+                
+                document.querySelectorAll('.game-btn.dividend, .game-btn.not-dividend').forEach(btn => {
+                    btn.style.pointerEvents = 'none';
+                    btn.style.opacity = '0.5';
+                });
+            } else {
+                const feedback = document.getElementById('stockGameFeedback');
+                feedback.className = 'game-feedback correct';
+                feedback.innerHTML = 🎮 Hra dokončena! Skóre: ${stockGameScore}/3<br>Už rozumíš rozdílu mezi burzou a tržištěm!;
+                feedback.style.display = 'block';
+                
+                document.querySelectorAll('.game-btn.stock-exchange, .game-btn.marketplace').forEach(btn => {
+                    btn.style.pointerEvents = 'none';
+                    btn.style.opacity = '0.5';
+                });
+            }
+            
+            updateProgress();
+        }
+
+        // Inicializace
+        function initGame() {
+            document.getElementById('dividendCard').textContent = shuffledDividendItems[0].name;
+            document.getElementById('stockCard').textContent = shuffledStockItems[0].name;
+            document.getElementById('dividendScore').textContent = dividendGameScore;
+            document.getElementById('stockScore').textContent = stockGameScore;
+        }
+
+        // Spustí při načtení stránky
+       document.addEventListener('DOMContentLoaded', function() {
+    initGame1();          
+    initGame2();          
+    initGame();   
+    initDragDrop();       
+    updateProgress1();
+    updateProgress2();
+    updateProgress();     
+});
+    </script>
+
+</body>
+</html>

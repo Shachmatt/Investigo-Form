@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investigo - Generátor lekcí</title>
+    <style>
+        /* === RESET & BASE STYLES === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #F8F9D7 0%, #E49BFF 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(133, 15, 141, 0.1);
+            overflow: hidden;
+        }
+
+        /* === HEADER === */
+        .header {
+            background: linear-gradient(135deg, #850F8D 0%, #C738BD 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* === MAIN CONTENT === */
+        .main-content {
+            padding: 40px;
+        }
+
+        .form-section {
+            margin-bottom: 40px;
+            padding: 30px;
+            background: #F8F9D7;
+            border-radius: 15px;
+            border-left: 5px solid #850F8D;
+        }
+
+        .form-section h2 {
+            color: #850F8D;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-section h2::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #C738BD;
+            border-radius: 50%;
+        }
+
+        /* === FORM CONTROLS === */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #850F8D;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #E49BFF;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #C738BD;
+            box-shadow: 0 0 0 3px rgba(199, 56, 189, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        /* === BUTTONS === */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #850F8D 0%, #C738BD 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(133, 15, 141, 0.3);
+        }
+
+        .btn-secondary {
+            background: #E49BFF;
+            color: #850F8D;
+        }
+
+        .btn-secondary:hover {
+            background: #C738BD;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ff3838;
+        }
+
+        .btn-success {
+            background: #2ed573;
+            color: white;
+            font-size: 1.2rem;
+            padding: 15px 30px;
+        }
+
+        .btn-success:hover {
+            background: #20bf6b;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(46, 213, 115, 0.3);
+        }
+
+        /* === EXERCISES === */
+        .exercises-container {
+            margin-top: 30px;
+        }
+
+        .exercise-item {
+            background: white;
+            border: 2px solid #E49BFF;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .exercise-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #F8F9D7;
+        }
+
+        .exercise-type {
+            background: #850F8D;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .exercise-number {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #C738BD;
+        }
+
+        .exercise-options {
+            margin-top: 15px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #F8F9D7;
+            border-radius: 8px;
+        }
+
+        .option-item input[type="text"] {
+            flex: 1;
+            margin: 0;
+        }
+
+        .option-item input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        /* === EXPORT SECTION === */
+        .export-section {
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(135deg, #F8F9D7 0%, #E49BFF 100%);
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .form-section {
+                padding: 20px;
+            }
+        }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .exercise-item {
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* === UTILITY CLASSES === */
+        .hidden {
+            display: none !important;
+        }
+
+        .mt-2 {
+            margin-top: 20px;
+        }
+
+        .mb-2 {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+     <form action="/submit" method="POST" id="lessonForm">
+    <input type="hidden" name="json" id="jsonData" />
+    <input type="hidden" id="sectionId" value="" />
+
+    <div class="container">
+      <div class="header">
+        <h1>🎯 Investigo</h1>
+        <p>Generátor vzdělávacích lekcí</p>
+      </div>
+
+        <!-- === MAIN CONTENT === -->
+        <div class="main-content">
+            <!-- === LESSON BASIC INFO === -->
+            <div class="form-section">
+                <h2>📚 Základní informace o lekci</h2>
+                
+                <div class="form-group">
+                    <label for="lessonTitle">Název lekce</label>
+                    <input type="text" id="lessonTitle" placeholder="Např. Úvod do investování">
+                </div>
+
+                <div class="form-group">
+                    <label for="lessonIntro">Úvod lekce</label>
+                    <textarea id="lessonIntro" placeholder="Krátký popis toho, co se studenti naučí..."></textarea>
+                </div>
+            </div>
+
+            <!-- === BOT REPLIES === -->
+            <div class="form-section">
+                <h2>🤖 Repliky bota</h2>
+                
+                <div class="form-group">
+                    <label for="beforeExercise">Před cvičením (beforeExercise)</label>
+                    <textarea id="beforeExercise" placeholder="Co řekne bot před každým cvičením..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="outro">Závěrečná zpráva (outro)</label>
+                    <textarea id="outro" placeholder="Závěrečná zpráva na konci lekce..."></textarea>
+                </div>
+            </div>
+
+            <!-- === EXERCISES === -->
+            <div class="form-section">
+                <h2>💪 Cvičení</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <label for="exerciseType">Typ cvičení</label>
+                    <select id="exerciseType">
+                        <option value="Question">Výběr jedné odpovědi (Single Choice)</option>
+                        <option value="MatchExcercise">Párování (Match)</option>
+                        <option value="Game">Hra (Game)</option>
+                        <option value="Calc">Textová odpověď (Text Input)</option>
+                        <option value="Info">Informační blok (Info)</option>
+                    </select>
+                </div>
+
+                <button type="button" class="btn btn-primary" onclick="addExercise()">
+                    ➕ Přidat cvičení
+                </button>
+
+                <div class="exercises-container" id="exercisesContainer">
+                    <!-- Exercises will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- === EXPORT === -->
+              <div class="export-section">
+          <h2 style="color: #850F8D; margin-bottom: 20px;">📤 Odeslání lekce</h2>
+          <button type="submit" class="btn btn-success">
+            💾 Odeslat lekci
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+    <script>
+        // === GLOBAL VARIABLES === 
+        let exerciseCounter = 0;
+        let exercises = [];
+
+        // === EXERCISE TEMPLATES === 
+        const exerciseTemplates = {
+            Question: {
+                name: 'Výběr jedné odpovědi',
+                fields: ['question', 'options', 'correct_index']
+            },
+            MatchExcercise: {
+                name: 'Párování',
+                fields: ['question', 'options', 'labels']
+            },
+            Game: {
+                name: 'Hra',
+                fields: ['question', 'optionOneName', 'optionTwoName', 'optionOneItems', 'optionTwoItems']
+            },
+            Calc: {
+                name: 'Textová odpověď',
+                fields: ['question', 'correct', 'typeResult']
+            },
+            Info: {
+                name: 'Informační blok',
+                fields: ['title', 'content', 'icon']
+            }
+        };
+
+        // === ADD EXERCISE FUNCTION === 
+        function addExercise() {
+            const type = document.getElementById('exerciseType').value;
+            const template = exerciseTemplates[type];
+            
+            exerciseCounter++;
+        const exerciseId = `exercise_${exerciseCounter}`;
+            
+            const exerciseHtml = createExerciseHtml(exerciseId, type, template);
+            
+            document.getElementById('exercisesContainer').insertAdjacentHTML('beforeend', exerciseHtml);
+            
+            // Initialize specific exercise type
+            initializeExerciseType(exerciseId, type);
+            
+            // Store exercise reference
+            exercises.push({
+                id: exerciseId,
+                type: type,
+                number: exerciseCounter
+            });
+        }
+
+        // === CREATE EXERCISE HTML === 
+        function createExerciseHtml(exerciseId, type, template) {
+            const questionSection = type === 'Info' ? '' : `
+                    <div class="form-group">
+                        <label>Otázka</label>
+                        <textarea data-field="question" placeholder="Zadej otázku..."></textarea>
+                    </div>
+            `;
+
+            return `
+                <div class="exercise-item" id="${exerciseId}">
+                    <div class="exercise-header">
+                        <span class="exercise-number">Cvičení #${exerciseCounter}</span>
+                        <span class="exercise-type">${template.name}</span>
+                        <button type="button" class="btn btn-danger" onclick="removeExercise('${exerciseId}')">
+                            🗑 Odstranit
+                        </button>
+                    </div>
+                    
+                    ${questionSection}
+                    
+                    <div class="exercise-specific" id="${exerciseId}_specific">
+                        ${getExerciseSpecificHtml(type)}
+                    </div>
+                </div>
+            `;
+        }
+
+        // === GET EXERCISE SPECIFIC HTML === 
+        function getExerciseSpecificHtml(type) {
+            switch(type) {
+                case 'Question':
+                    return `
+                        <h4 style="color: #850F8D; margin: 20px 0 15px 0;">Možnosti odpovědí</h4>
+                        <div class="exercise-options" id="options_container">
+                            <div class="option-item">
+                                <input type="radio" name="correct_option" value="0">
+                                <input type="text" placeholder="Možnost 1" data-option="0">
+                            </div>
+                            <div class="option-item">
+                                <input type="radio" name="correct_option" value="1">
+                                <input type="text" placeholder="Možnost 2" data-option="1">
+                            </div>
+                            <div class="option-item">
+                                <input type="radio" name="correct_option" value="2">
+                                <input type="text" placeholder="Možnost 3" data-option="2">
+                            </div>
+                            <div class="option-item">
+                                <input type="radio" name="correct_option" value="3">
+                                <input type="text" placeholder="Možnost 4" data-option="3">
+                            </div>
+                        </div>
+                    `;
+                    
+                case 'MatchExcercise':
+                    return `
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Možnosti (oddělené čárkami)</label>
+                                <textarea data-field="options" placeholder="Položka 1, Položka 2, Položka 3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Popisky (oddělené čárkami)</label>
+                                <textarea data-field="labels" placeholder="Popis 1, Popis 2, Popis 3"></textarea>
+                            </div>
+                        </div>
+                        <p style="margin-top: 10px; color: #850F8D; font-size: 0.9rem;">
+                            💡 Správné páry se nastavují později v aplikaci. Zde uveď pouze seznam položek a popisků.
+                        </p>
+                    `;
+                    
+                case 'Game':
+                    return `
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Název první skupiny</label>
+                                <input type="text" data-field="optionOneName" placeholder="Např. Burza">
+                            </div>
+                            <div class="form-group">
+                                <label>Název druhé skupiny</label>
+                                <input type="text" data-field="optionTwoName" placeholder="Např. Tržiště">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Položky první skupiny (oddělené čárkami)</label>
+                                <textarea data-field="optionOneItems" placeholder="Položka 1, Položka 2, Položka 3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Položky druhé skupiny (oddělené čárkami)</label>
+                                <textarea data-field="optionTwoItems" placeholder="Položka 1, Položka 2, Položka 3"></textarea>
+                            </div>
+                        </div>
+                    `;
+                    
+                case 'Calc':
+                    return `
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Správná odpověď</label>
+                                <input type="text" data-field="correct" placeholder="Správná odpověď">
+                            </div>
+                            <div class="form-group">
+                                <label>Typ odpovědi</label>
+                                <select data-field="typeResult">
+                                    <option value="text">Text</option>
+                                    <option value="number">Číslo</option>
+                                </select>
+                            </div>
+                        </div>
+                    `;
+                    
+                case 'Info':
+                    return `
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nadpis</label>
+                                <input type="text" data-field="title" placeholder="Např. Vítej v lekci!">
+                            </div>
+                            <div class="form-group">
+                                <label>Ikona</label>
+                                <input type="text" data-field="icon" placeholder="Např. 💡">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Text</label>
+                            <textarea data-field="content" placeholder="Doplň vysvětlující text..."></textarea>
+                        </div>
+                    `;
+                    
+                default:
+                    return '';
+            }
+        }
+
+        // === INITIALIZE EXERCISE TYPE === 
+        function initializeExerciseType(exerciseId, type) {
+            const exerciseElement = document.getElementById(exerciseId);
+            
+            if (type === 'Question') {
+                // Set name attribute for radio buttons
+                const radioButtons = exerciseElement.querySelectorAll('input[type="radio"]');
+                radioButtons.forEach(radio => {
+                    radio.name = `correct_option_${exerciseId}`;
+                });
+            }
+        }
+
+        // === ADD OPTION FUNCTION === 
+        function addOption(button, type) {
+            const container = button.previousElementSibling;
+            const optionCount = container.children.length;
+            
+            let optionHtml = '';
+            
+            switch(type) {
+                case 'single':
+                    optionHtml = `
+                        <div class="option-item">
+                            <input type="radio" name="correct_option" value="${optionCount}">
+                            <input type="text" placeholder="Možnost ${optionCount + 1}" data-option="${optionCount}">
+                            <button type="button" class="btn btn-danger" onclick="removeOption(this)">❌</button>
+                        </div>
+                    `;
+                    break;
+            }
+            
+            container.insertAdjacentHTML('beforeend', optionHtml);
+            
+            // Update radio button names for single choice
+            if (type === 'single') {
+                const exerciseElement = button.closest('.exercise-item');
+                const radioButtons = exerciseElement.querySelectorAll('input[type="radio"]');
+                radioButtons.forEach(radio => {
+                    radio.name = `correct_option_${exerciseElement.id}`;
+                });
+            }
+        }
+
+        // === REMOVE OPTION FUNCTION === 
+        function removeOption(button) {
+            const optionItem = button.closest('.option-item');
+            const container = optionItem.parentElement;
+            
+            // Don't allow removing if only 2 options remain
+            if (container.children.length <= 2) {
+                alert('Musí zůstat alespoň 2 možnosti!');
+                return;
+            }
+            
+            optionItem.remove();
+            
+            // Update option indices and labels
+            const options = container.querySelectorAll('.option-item');
+            options.forEach((option, index) => {
+                const input = option.querySelector('input[data-option]');
+                if (input) {
+                    input.setAttribute('data-option', index);
+                    input.placeholder = "Možnost " + (index + 1);
+                }
+                
+                // Update radio button values
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.value = index;
+                }
+            });
+        }
+
+        // === REMOVE EXERCISE FUNCTION === 
+        function removeExercise(exerciseId) {
+            if (confirm('Opravdu chcete odstranit toto cvičení?')) {
+                document.getElementById(exerciseId).remove();
+                exercises = exercises.filter(ex => ex.id !== exerciseId);
+            }
+        }
+
+
+
+        
+        // === EXPORT JSON FUNCTION === 
+        function exportJSON() {
+            const lesson = {
+                title: document.getElementById('lessonTitle').value,
+                intro: document.getElementById('lessonIntro').value,
+                beforeExercise: document.getElementById('beforeExercise').value,
+                outro: document.getElementById('outro').value,
+                exercises: []
+            };
+
+            
+            // Process each exercise
+            exercises.forEach(exerciseRef => {
+                const exerciseElement = document.getElementById(exerciseRef.id);
+                if (!exerciseElement) return;
+
+                const exercise = {
+                    type: exerciseRef.type,
+                    question: getFieldValue(exerciseElement, 'question')
+                };
+
+                // Add type-specific fields
+                switch(exerciseRef.type) {
+                    case 'Question':
+                        const singleOptions = getOptionsFromExercise(exerciseElement);
+                        exercise.options = singleOptions.options;
+                        exercise.correct_index = singleOptions.correct_index;
+                        break;
+
+                    case 'MatchExcercise':
+                        const matchData = getMatchData(exerciseElement);
+                        exercise.options = matchData.options;
+                        exercise.labels = matchData.labels;
+                        break;
+
+                    case 'Game':
+                        exercise.optionOneName = getFieldValue(exerciseElement, 'optionOneName');
+                        exercise.optionTwoName = getFieldValue(exerciseElement, 'optionTwoName');
+                        exercise.optionOneItems = getFieldValue(exerciseElement, 'optionOneItems').split(',').map(s => s.trim()).filter(Boolean);
+                        exercise.optionTwoItems = getFieldValue(exerciseElement, 'optionTwoItems').split(',').map(s => s.trim()).filter(Boolean);
+                        break;
+
+                    case 'Calc':
+                        exercise.correct = getFieldValue(exerciseElement, 'correct');
+                        exercise.typeResult = getFieldValue(exerciseElement, 'typeResult');
+                        break;
+                    
+                    case 'Info':
+                        exercise.title = getFieldValue(exerciseElement, 'title');
+                        exercise.content = getFieldValue(exerciseElement, 'content');
+                        exercise.icon = getFieldValue(exerciseElement, 'icon');
+                        delete exercise.question;
+                        break;
+                }
+
+                lesson.exercises.push(exercise);
+            });
+
+            // Validate basic fields
+            if (!lesson.title.trim()) {
+                alert('Prosím vyplňte název lekce!');
+                return;
+            }
+
+            if (lesson.exercises.length === 0) {
+                alert('Prosím přidejte alespoň jedno cvičení!');
+                return;
+            }
+            
+
+           
+        }
+
+        // === HELPER FUNCTIONS === 
+        function getFieldValue(exerciseElement, fieldName, type = 'text') {
+            const element = exerciseElement.querySelector(`[data-field="${fieldName}"]`);
+            if (!element) return '';
+            
+            if (type === 'checkbox') {
+                return element.checked;
+            }
+            
+            return element.value.trim();
+        }
+
+        function getOptionsFromExercise(exerciseElement) {
+            const optionInputs = exerciseElement.querySelectorAll('input[data-option]');
+            const options = [];
+            let correct_index = -1;
+            
+            optionInputs.forEach((input, index) => {
+                const value = input.value.trim();
+                if (value) {
+                    options.push(value);
+                    
+                    const radio = input.parentElement.querySelector('input[type="radio"]');
+                    if (radio && radio.checked) {
+                        correct_index = index;
+                    }
+                }
+            });
+            
+            return {
+                options: options,
+                correct_index: correct_index
+            };
+        }
+
+        function getMatchData(exerciseElement) {
+            const optionsRaw = getFieldValue(exerciseElement, 'options');
+            const labelsRaw = getFieldValue(exerciseElement, 'labels');
+            const options = optionsRaw ? optionsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+            const labels = labelsRaw ? labelsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+            return {
+                options,
+                labels
+            };
+        }
+
+
+
+
+
+
+document.getElementById("lessonForm").addEventListener("submit", function (e) {
+    // Zavolá exportJSON(), který sestaví JSON
+    const lesson = {
+        title: document.getElementById('lessonTitle').value,
+        intro: document.getElementById('lessonIntro').value,
+        beforeExercise: document.getElementById('beforeExercise').value,
+        outro: document.getElementById('outro').value,
+        sectionId: document.getElementById('sectionId').value || null,
+        exercises: []
+    };
+
+    exercises.forEach(exerciseRef => {
+        const exerciseElement = document.getElementById(exerciseRef.id);
+        if (!exerciseElement) return;
+
+        const exercise = {
+            type: exerciseRef.type,
+            question: getFieldValue(exerciseElement, 'question')
+        };
+
+        switch(exerciseRef.type) {
+            case 'Question':
+                const singleOptions = getOptionsFromExercise(exerciseElement);
+                exercise.options = singleOptions.options;
+                exercise.correct_index = singleOptions.correct_index;
+                break;
+            case 'MatchExcercise':
+                const matchData = getMatchData(exerciseElement);
+                exercise.options = matchData.options;
+                exercise.labels = matchData.labels;
+                break;
+            case 'Game':
+                exercise.optionOneName = getFieldValue(exerciseElement, 'optionOneName');
+                exercise.optionTwoName = getFieldValue(exerciseElement, 'optionTwoName');
+                exercise.optionOneItems = getFieldValue(exerciseElement, 'optionOneItems').split(',').map(s => s.trim()).filter(Boolean);
+                exercise.optionTwoItems = getFieldValue(exerciseElement, 'optionTwoItems').split(',').map(s => s.trim()).filter(Boolean);
+                break;
+            case 'Calc':
+                exercise.correct = getFieldValue(exerciseElement, 'correct');
+                exercise.typeResult = getFieldValue(exerciseElement, 'typeResult');
+                break;
+            case 'Info':
+                exercise.title = getFieldValue(exerciseElement, 'title');
+                exercise.content = getFieldValue(exerciseElement, 'content');
+                exercise.icon = getFieldValue(exerciseElement, 'icon');
+                delete exercise.question;
+                break;
+        }
+
+        lesson.exercises.push(exercise);
+    });
+
+    if (!lesson.title.trim() || lesson.exercises.length === 0) {
+        alert("Prosím vyplňte název lekce a přidejte alespoň jedno cvičení.");
+        e.preventDefault(); // Zastaví odeslání
+        return;
+    }
+
+    document.getElementById("jsonData").value = JSON.stringify(lesson);
+});
+
+
+
+
+
+
+
+        // === INITIALIZATION === 
+        document.addEventListener('DOMContentLoaded', function() {
+            // Načti sectionId z URL (přichází z Hyperlekce)
+            const params = new URLSearchParams(window.location.search);
+            const sectionId = params.get('sectionId');
+            if (sectionId) {
+                document.getElementById('sectionId').value = sectionId;
+            }
+
+            console.log('Investigo Lesson Generator loaded successfully! 🎯');
+        });
+
+
+
+
+
+
+    </script>
+</body>
+</html>
