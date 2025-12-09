@@ -183,6 +183,7 @@
 
 <script>
     // --- STAV APLIKACE ---
+    const INVESTIGO_BASE_URL = window.INVESTIGO_BASE_URL || window.location.origin;
     let learningData = [];
     let activeLessonId = null;
     let isLoading = false;
@@ -319,7 +320,7 @@
     // 3. Přidání lekce -> přesměrování do Investigo formuláře s sectionId
     function addExercise(sectionId) {
         // otevři Investigo s parametrem sectionId, ať formulář ví, do které sekce patří
-        const url = `http://localhost:3000/?sectionId=${encodeURIComponent(sectionId)}`;
+        const url = `${INVESTIGO_BASE_URL}/?sectionId=${encodeURIComponent(sectionId)}`;
         window.open(url, '_blank');
     }
 
