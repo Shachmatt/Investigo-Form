@@ -185,10 +185,7 @@
     // --- STAV APLIKACE ---
     // URL for the main Investigo form service
     // In production: use Render URL, in development: use localhost:3000
-    const INVESTIGO_BASE_URL = window.INVESTIGO_BASE_URL || 
-        (window.location.hostname.includes('render.com') 
-            ? 'https://lesson-form.onrender.com' 
-            : 'http://localhost:3000');
+    const INVESTIGO_BASE_URL = 'https://lesson-form.onrender.com';
     let learningData = [];
     let activeLessonId = null;
     let isLoading = false;
