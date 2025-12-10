@@ -187,7 +187,7 @@
     // In production: use Render URL, in development: use localhost:3000
     const INVESTIGO_BASE_URL = window.INVESTIGO_BASE_URL || 
         (window.location.hostname.includes('render.com') 
-            ? 'https://investigo-form.onrender.com' 
+            ? 'https://lesson-form.onrender.com' 
             : 'http://localhost:3000');
     let learningData = [];
     let activeLessonId = null;
@@ -324,14 +324,14 @@
 
     // 3. Přidání lekce -> přesměrování do Investigo formuláře s sectionId
     function addExercise(sectionId) {
-        // otevři Investigo s parametrem sectionId, ať formulář ví, do které sekce patří
-        const url = `${INVESTIGO_BASE_URL}/?sectionId=${encodeURIComponent(sectionId)}`;
-        console.log('Opening Investigo form at:', url);
-        const newWindow = window.open(url, '_blank');
-        if (!newWindow) {
-            alert('Pop-up blokován! Povolte pop-up okna pro tento web a zkuste to znovu.');
-        }
+    // otevři Investigo s parametrem sectionId, ať formulář ví, do které sekce patří
+    const url = `${INVESTIGO_BASE_URL}/?sectionId=${encodeURIComponent(sectionId)}`;
+    console.log('Opening Investigo form at:', url);
+    const newWindow = window.open(url, '_blank');
+    if (!newWindow) {
+        alert('Pop-up blokován! Povolte pop-up okna pro tento web a zkuste to znovu.');
     }
+}
 
     // 3b. Editace a mazání Lekcí
     function editExercise(sectionId, exerciseId) {
@@ -461,24 +461,28 @@
         } else {
             // ---> ZOBRAZIT DETAIL LEKCE
             const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
-            
-            let html = `
-                <div class="nav-bar">
-                    <button class="back-btn" onclick="activeLessonId = null; renderApp()">← ZPĚT</button>
-                    <div class="nav-title">${lesson.title}</div>
+            if (!lesson) { // Přidáno pro případ, že by aktivní lekce zmizela
+            activeLessonId = null;
+            renderApp();
+            return;
+        }
+        let html = `
+            <div class="nav-bar">
+                <button class="back-btn" onclick="activeLessonId = null; renderApp()">← ZPĚT</button>
+                <div class="nav-title">${lesson.title}</div>
+            </div>
+            <div class="content">
+
+                <div class="form-box">
+                    <span class="label">Přidat Oddělení (Sekci):</span>
+                    <input type="text" id="sec-title" placeholder="Název (např. Zvířata)">
+                    <button class="btn-add" onclick="addSection()">+ PŘIDAT ODDĚLENÍ</button>
                 </div>
-                <div class="content">
 
-                    <div class="form-box">
-                        <span class="label">Přidat Oddělení (Sekci):</span>
-                        <input type="text" id="sec-title" placeholder="Název (např. Zvířata)">
-                        <button class="btn-add" onclick="addSection()">+ PŘIDAT ODDĚLENÍ</button>
-                    </div>
+                `;
 
-                    `;
-
-            lesson.sections.forEach(section => {
-                html += `
+        lesson.sections.forEach(section => {
+            html += `
                     <div class="section-container">
                         <div class="section-header">
                             <span class="section-badge">${section.title}</span>
@@ -510,12 +514,8 @@
                         </div>
                         
                         <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:10px;">
-                            <span class="label" style="font-size:11px; color:#aaa;">Nová lekce (otevře Investigo):</span>
-                            <div class="row">
-                                <input type="text" disabled placeholder="Znak" style="flex:1; opacity:0.5;">
-                                <input type="text" disabled placeholder="VLASTNÍ ID" style="flex:3; opacity:0.5;">
-                            </div>
-                            <button class="btn-nav btn-small" onclick="window.location.href='/'">+ Přidat lekci v Investigo</button>
+                            <span class="label" style="font-size:11px; color:#aaa;">Novou lekci vytvoř v aplikaci Investigo:</span>
+                            <button class="btn-nav btn-small" onclick="addExercise('${section.id}')">+ Přidat lekci v Investigo</button>
                         </div>
                     </div>
                 `;
