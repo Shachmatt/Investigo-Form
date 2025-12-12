@@ -24,36 +24,99 @@ app.use(express.static(path.join(__dirname)));
 // Pomocná funkce: načíst super lessons + sections
 app.get('/api/data', async (req, res) => {
   try {
+    // 1. Upravený SQL dotaz podle tvé nové specifikace
+    // Cesta: SuperLesson -> Section -> Lesson -> Exercise -> ExerciseData
     const result = await db.query(`
         SELECT 
           sl.id AS super_id, sl.title AS super_title, sl.description,
-          s.id AS section_id, s.title AS section_title, s.position
-        FROM superLessons sl
+          s.id AS section_id, s.title AS section_title, s.position AS section_position,
+          
+          -- Tabulka 'lessons' (napojena na sekci)
+          l.id AS lesson_id, l.title AS lesson_title, l.section_id, 
+          
+          -- Tabulka 'exercises' (napojena na lekci)
+          e.id AS exercise_id, e.label AS exercise_label, e.lesson_id,
+          
+          -- Tabulka 'exercise_data' (napojena na exercise)
+          ed.id AS data_id, ed.* FROM superLessons sl
         LEFT JOIN sections s ON s.super_lesson_id = sl.id
-        ORDER BY sl.id ASC, s.position NULLS LAST, s.id ASC
+        LEFT JOIN lessons l ON l.section_id = s.id         -- Změna: Lessons patří do sekce
+        LEFT JOIN exercises e ON e.lesson_id = l.id        -- Změna: Exercises patří do lekce
+        LEFT JOIN exercise_data ed ON ed.exercise_id = e.id -- Změna: Data patří k exercise
+        
+        ORDER BY sl.id ASC, s.position NULLS LAST, s.id ASC, l.id ASC, e.id ASC
       `);
 
     const map = new Map();
+
     result.rows.forEach(row => {
+      // --- 1. SUPER LESSON ---
       if (!map.has(row.super_id)) {
         map.set(row.super_id, {
           id: row.super_id,
           title: row.super_title,
           description: row.description,
           sections: [],
+          _sectionsMap: new Map() // Pomocná mapa
         });
       }
+      const currentSuper = map.get(row.super_id);
+
+      // --- 2. SECTION ---
       if (row.section_id) {
-        map.get(row.super_id).sections.push({
-          id: row.section_id,
-          title: row.section_title,
-          position: row.position,
-          exercises: [], // placeholder; actual lessons/exercises live in Investigo
-        });
+        if (!currentSuper._sectionsMap.has(row.section_id)) {
+          const newSection = {
+            id: row.section_id,
+            title: row.section_title,
+            position: row.section_position,
+            exercises: [], // Pro frontend to necháme jako 'exercises', i když v DB jsou to 'lessons'
+            _lessonsMap: new Map() // Pomocná mapa pro lekce
+          };
+          currentSuper.sections.push(newSection);
+          currentSuper._sectionsMap.set(row.section_id, newSection);
+        }
+        const currentSection = currentSuper._sectionsMap.get(row.section_id);
+
+        // --- 3. LESSON (v DB 'lessons', ve frontendu to mapujeme do pole 'exercises') ---
+        if (row.lesson_id) {
+          if (!currentSection._lessonsMap.has(row.lesson_id)) {
+            const newLesson = {
+              id: row.lesson_id,     // ID lekce
+              label: row.lesson_title || 'Bez názvu', // Frontend používá 'label' pro kolečko
+              content: []            // Sem dáme data cvičení
+            };
+            currentSection.exercises.push(newLesson);
+            currentSection._lessonsMap.set(row.lesson_id, newLesson);
+          }
+          const currentLesson = currentSection._lessonsMap.get(row.lesson_id);
+
+          // --- 4. EXERCISE + DATA ---
+          // Pokud existuje cvičení a k němu data, uložíme je dovnitř lekce
+          if (row.exercise_id) {
+            // Zkontrolujeme, zda už toto cvičení v seznamu nemáme (kvůli více řádkům exercise_data)
+            // Pro jednoduchost sem pushneme raw data. Pokud je to 1:1, je to v pohodě.
+            currentLesson.content.push({
+                exercise_id: row.exercise_id,
+                label: row.exercise_label,
+                data_row: row // Zde máš přístup ke všem sloupcům z exercise_data
+            });
+          }
+        }
       }
     });
 
-    res.json(Array.from(map.values()));
+    // Úklid pomocných map před odesláním (JSON.stringify neumí mapy)
+    const finalData = Array.from(map.values()).map(sl => {
+        delete sl._sectionsMap;
+        sl.sections = sl.sections.map(sec => {
+            delete sec._lessonsMap;
+            return sec;
+        });
+        return sl;
+    });
+
+    res.json(finalData);
+
   } catch (err) {
     console.error('Chyba při načítání dat:', err);
     res.status(500).json({ error: 'Chyba serveru při načítání dat.' });

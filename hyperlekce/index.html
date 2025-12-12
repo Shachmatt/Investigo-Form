@@ -378,22 +378,29 @@
     }
 
     // 5. Načtení ze serveru (primární zdroj pravdy)
-    async function loadFromServer(keepActive = false) {
+async function loadFromServer(keepActive = false) {
         if (isLoading) return;
         isLoading = true;
         try {
             const res = await fetch('/api/data');
             if (!res.ok) throw new Error('Chyba při načítání dat ze serveru');
             const data = await res.json();
+            
             learningData = (Array.isArray(data) ? data : []).map(l => ({
                 ...l,
                 id: String(l.id),
                 sections: (l.sections || []).map(s => ({
                     ...s,
                     id: String(s.id),
-                    exercises: s.exercises || []
+                    // Zde už backend posílá naplněné pole exercises díky novému SQL
+                    exercises: (s.exercises || []).map(e => ({
+                        ...e,
+                        id: String(e.id),
+                        label: e.label || '??' // Pojistka, kdyby chyběl label
+                    }))
                 }))
             }));
+
             if (keepActive && activeLessonId) {
                 const stillExists = learningData.some(l => l.id === activeLessonId);
                 if (!stillExists) activeLessonId = null;
