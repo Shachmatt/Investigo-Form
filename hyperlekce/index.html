@@ -267,38 +267,84 @@
             if (!newWindow) { alert('Pop-up blokován! Povolte pop-up okna pro tento web a zkuste to znovu.'); }
         }
     
-        function editExercise(sectionId, lessonId) {
-            const lesson = learningData.find(l => l.id === activeLessonId);
-            if (!lesson) return;
-            const section = lesson.sections.find(s => String(s.id) === String(sectionId));
-            if (!section) return;
-            const currentLesson = section.exercises.find(e => String(e.id) === String(lessonId));
-            if (!currentLesson) return;
-            const newTitle = prompt('Uprav název lekce:', currentLesson.lesson_all_data.title);
-            if (newTitle === null) return;
-            const trimmedTitle = newTitle.trim();
-            if (!trimmedTitle) return;
+   // NAHRADÍ TUTO FUNKCI:
+function editExercise(sectionId, lessonId) {
+    const lesson = learningData.find(l => l.id === activeLessonId);
+    if (!lesson) return;
+    const section = lesson.sections.find(s => String(s.id) === String(sectionId));
+    if (!section) return;
+    const currentLesson = section.exercises.find(e => String(e.id) === String(lessonId));
+    if (!currentLesson) return;
+
+    // Původní data Lekce
+    const oldData = currentLesson.lesson_all_data;
+
+    // Vyzveme k úpravě všech polí
+    const newTitle = prompt('Uprav název lekce:', oldData.title);
+    if (newTitle === null) return;
     
-            currentLesson.lesson_all_data.title = trimmedTitle;
-            currentLesson.label = trimmedTitle;
-            alert("Úprava uložena lokálně. K uložení na server by bylo nutné implementovat PATCH endpoint pro Lessons.");
-            renderApp();
-        }
+    const newIntro = prompt('Uprav INTRO:', oldData.intro || '');
+    if (newIntro === null) return;
+
+    const newBeforeExercise = prompt('Uprav BEFORE_EXERCISE:', oldData.before_exercise || '');
+    if (newBeforeExercise === null) return;
+
+    const newOutro = prompt('Uprav OUTRO:', oldData.outro || '');
+    if (newOutro === null) return;
+
+    // Data k odeslání
+    const updateData = {
+        title: newTitle.trim(),
+        intro: newIntro,
+        before_exercise: newBeforeExercise,
+        outro: newOutro
+    };
+
+    // Odeslání PATCH požadavku na server
+    fetch(`/api/lessons/${lessonId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData)
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Úprava selhala na serveru.');
+        return res.json();
+    })
+    .then(() => {
+        alert("Lekce byla úspěšně upravena na serveru.");
+        loadFromServer(true); // Znovu načteme data pro aktualizaci zobrazení
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Chyba při úpravě lekce: ' + err.message);
+    });
+}
     
-        function deleteExercise(sectionId, lessonId) {
-            const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
-            if (!lesson) return;
-            const section = lesson.sections.find(s => String(s.id) === String(sectionId));
-            if (!section) return;
-            const currentLesson = section.exercises.find(e => String(e.id) === String(lessonId));
-            if (!currentLesson) return;
-            
-            if (!confirm(`Opravdu smazat lekci "${currentLesson.label}" (ID: ${currentLesson.id})?`)) return;
-            
-            section.exercises = section.exercises.filter(e => String(e.id) !== String(lessonId));
-            alert("Mazání proběhlo lokálně. K smazání na serveru by bylo nutné implementovat DELETE endpoint pro Lessons.");
-            renderApp();
-        }
+        // NAHRADÍ TUTO FUNKCI:
+function deleteExercise(sectionId, lessonId) {
+    const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
+    if (!lesson) return;
+    const section = lesson.sections.find(s => String(s.id) === String(sectionId));
+    if (!section) return;
+    const currentLesson = section.exercises.find(e => String(e.id) === String(lessonId));
+    if (!currentLesson) return;
+    
+    if (!confirm(`Opravdu smazat lekci "${currentLesson.label}" (ID: ${currentLesson.id})? Tímto se smažou i všechna přidružená cvičení!`)) return;
+    
+    // Odeslání DELETE požadavku na server
+    fetch(`/api/lessons/${lessonId}`, {
+        method: 'DELETE'
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Mazání selhalo na serveru.');
+        alert("Lekce byla úspěšně smazána na serveru.");
+        loadFromServer(true); // Znovu načteme data pro aktualizaci zobrazení
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Chyba při mazání lekce: ' + err.message);
+    });
+}
     
         function exportData() {
             console.clear();

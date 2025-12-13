@@ -239,6 +239,101 @@ app.delete('/api/sections/:id', async (req, res) => {
   }
 });
 
+
+
+// --- ENDPOINTY PRO ÚPRAVU A MAZÁNÍ LEKCÍ (LESSONS) ---
+
+// 1. MAZÁNÍ LEKCE (DELETE)
+app.delete('/api/lessons/:lessonId', async (req, res) => {
+  const { lessonId } = req.params;
+  const client = await db.connect();
+  try {
+      await client.query('BEGIN');
+
+      // Nejdřív smažeme data a cvičení, které na Lekci odkazují
+      // Předpoklad: CASCADE DELETES jsou již nastaveny v DB, ale je bezpečnější to udělat explicitně.
+      // Pokud má Lessons ID 1, a Exercises má lesson_id 1, smažeme všechna cvičení v této lekci.
+      await client.query('DELETE FROM exercises WHERE lesson_id = $1', [lessonId]);
+      
+      // Nyní smažeme samotnou lekci
+      const result = await client.query('DELETE FROM lessons WHERE id = $1 RETURNING id', [lessonId]);
+
+      await client.query('COMMIT');
+
+      if (result.rowCount === 0) {
+          return res.status(404).json({ error: 'Lekce nenalezena.' });
+      }
+      res.status(204).send(); // 204 No Content pro úspěšné mazání
+
+  } catch (err) {
+      await client.query('ROLLBACK');
+      console.error('Chyba při mazání lekce:', err);
+      res.status(500).json({ error: 'Chyba serveru při mazání lekce.' });
+  } finally {
+      client.release();
+  }
+});
+
+
+// 2. ÚPRAVA LEKCE (PATCH)
+app.patch('/api/lessons/:lessonId', async (req, res) => {
+  const { lessonId } = req.params;
+  const { title, intro, before_exercise, outro } = req.body;
+  
+  // Vytvoření dynamické sady pro SQL dotaz
+  const updates = [];
+  const values = [];
+  let paramIndex = 1;
+
+  if (title !== undefined) {
+      updates.push(`title = $${paramIndex++}`);
+      values.push(title);
+  }
+  if (intro !== undefined) {
+      updates.push(`intro = $${paramIndex++}`);
+      values.push(intro);
+  }
+  if (before_exercise !== undefined) {
+      updates.push(`before_exercise = $${paramIndex++}`);
+      values.push(before_exercise);
+  }
+  if (outro !== undefined) {
+      updates.push(`outro = $${paramIndex++}`);
+      values.push(outro);
+  }
+
+  if (updates.length === 0) {
+      return res.status(400).json({ error: 'Žádné parametry pro úpravu nebyly poskytnuty.' });
+  }
+
+  const setClause = updates.join(', ');
+  values.push(lessonId); // Poslední hodnota je ID lekce
+  
+  const query = `
+      UPDATE lessons
+      SET ${setClause}, updated_at = NOW()
+      WHERE id = $${paramIndex}
+      RETURNING *;
+  `;
+
+  try {
+      const result = await db.query(query, values);
+      if (result.rowCount === 0) {
+          return res.status(404).json({ error: 'Lekce nenalezena.' });
+      }
+      res.json(result.rows[0]);
+
+  } catch (err) {
+      console.error('Chyba při úpravě lekce:', err);
+      res.status(500).json({ error: 'Chyba serveru při úpravě lekce.' });
+  }
+});
+
+
+
+
+
+
 app.listen(PORT, () => {
   console.log(`Server běží na http://localhost:${PORT}`);
 });
