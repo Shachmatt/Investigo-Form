@@ -456,16 +456,17 @@ function deleteExercise(sectionId, lessonId) {
     
                         // START VYPISU VŠECH DAT CVIČENÍ
                         // Opravený kód pro vypisování dat Cvičení
+// NAHRADIT TENTO CYKLUS UVNITŘ lessonItem.exercises.forEach:
+// START VYPISU VŠECH DAT CVIČENÍ
 lessonItem.exercises.forEach((ex, index) => {
     const exData = ex.exercise_all_data;
     
-    // Zjistíme, jestli data existují.
+    // Zjistíme, jestli data existují. (Převzato z předchozí opravy)
     let dataContent = exData.data_content;
     let displayContent = 'PRÁZDNÉ';
     let dataColor = 'var(--danger)';
 
     if (dataContent) {
-        // *** KLÍČOVÁ ZMĚNA ZDE: Převedeme data na string ***
         let contentString;
         if (typeof dataContent === 'object' && dataContent !== null) {
             contentString = JSON.stringify(dataContent);
@@ -474,13 +475,20 @@ lessonItem.exercises.forEach((ex, index) => {
         }
 
         dataColor = 'var(--success)';
-        // Nyní můžeme bezpečně volat substring na stringu
-        displayContent = contentString.substring(0, 50) + (contentString.length > 50 ? '...' : '');
+        // Váš kód, který ukazuje celý obsah:
+        displayContent = contentString; 
     }
 
     html += `
         <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; margin-bottom: 5px; font-size: 12px;">
-            <strong>EX ID:</strong> ${ex.id}<br>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-weight: bold; color: #ffc107;">EX ID: ${ex.id}</div>
+                <div>
+                    <button class="btn-edit btn-small" onclick="editIndividualExercise('${ex.id}')" style="margin-right: 5px;">✎</button>
+                    <button class="btn-delete btn-small" onclick="deleteIndividualExercise('${ex.id}')">✕</button>
+                </div>
+            </div>
+            
             <strong>Typ:</strong> ${exData.type}<br>
             <strong>Otázka:</strong> ${exData.question}<br>
             <strong>Obsah (DATA):</strong> <span style="font-family: monospace; color: ${dataColor};">${displayContent}</span><br>
@@ -488,6 +496,7 @@ lessonItem.exercises.forEach((ex, index) => {
         </div>
     `;
 });
+// END VYPISU VŠECH DAT CVIČENÍ
                         // END VYPISU VŠECH DAT CVIČENÍ
     
                         html += `</div>`; // Uzavření exercise-item

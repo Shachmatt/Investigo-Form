@@ -330,7 +330,110 @@ app.patch('/api/lessons/:lessonId', async (req, res) => {
 });
 
 
+// --- ENDPOINTY PRO ÚPRAVU A MAZÁNÍ CVIČENÍ (EXERCISES) ---
 
+// 3. MAZÁNÍ CVIČENÍ (DELETE)
+app.delete('/api/exercises/:exerciseId', async (req, res) => {
+  const { exerciseId } = req.params;
+  const client = await db.connect();
+  try {
+      await client.query('BEGIN');
+
+      // Předpokládáme, že exercise_data odkazuje na exercises.
+      // Smažeme data cvičení (exercise_data)
+      await client.query('DELETE FROM exercise_data WHERE exercise_id = $1', [exerciseId]);
+      
+      // Nyní smažeme samotné cvičení (exercises)
+      const result = await client.query('DELETE FROM exercises WHERE id = $1 RETURNING id', [exerciseId]);
+
+      await client.query('COMMIT');
+
+      if (result.rowCount === 0) {
+          return res.status(404).json({ error: 'Cvičení nenalezeno.' });
+      }
+      res.status(204).send(); // 204 No Content pro úspěšné mazání
+
+  } catch (err) {
+      await client.query('ROLLBACK');
+      console.error('Chyba při mazání cvičení:', err);
+      res.status(500).json({ error: 'Chyba serveru při mazání cvičení.' });
+  } finally {
+      client.release();
+  }
+});
+
+
+// 4. ÚPRAVA CVIČENÍ (PATCH)
+app.patch('/api/exercises/:exerciseId', async (req, res) => {
+  const { exerciseId } = req.params;
+  const { type, question, data_content } = req.body; // data_content je naše exercise_data.data
+  const client = await db.connect();
+
+  try {
+      await client.query('BEGIN');
+      
+      // --- 1. Aktualizace tabulky 'exercises' (type, question) ---
+      const ex_updates = [];
+      const ex_values = [];
+      let ex_paramIndex = 1;
+
+      if (type !== undefined) {
+          ex_updates.push(`type = $${ex_paramIndex++}`);
+          ex_values.push(type);
+      }
+      if (question !== undefined) {
+          ex_updates.push(`question = $${ex_paramIndex++}`);
+          ex_values.push(question);
+      }
+
+      if (ex_updates.length > 0) {
+          const ex_setClause = ex_updates.join(', ');
+          ex_values.push(exerciseId);
+          const ex_query = `
+              UPDATE exercises
+              SET ${ex_setClause}
+              WHERE id = $${ex_paramIndex}
+              RETURNING id;
+          `;
+          await client.query(ex_query, ex_values);
+      }
+      
+      // --- 2. Aktualizace tabulky 'exercise_data' (data_content) ---
+      if (data_content !== undefined) {
+          // Použijeme UPSERT (INSERT OR UPDATE) logiku, abychom zajistili, že data existují.
+          // Předpoklad: exercise_data.id je primární klíč a exercise_id je unikátní.
+          // Pokud víme, že existuje 1:1 vztah, použijeme UPDATE.
+          const data_result = await client.query(
+              `UPDATE exercise_data SET data = $1 WHERE exercise_id = $2 RETURNING id`,
+              [data_content, exerciseId]
+          );
+
+          // Pokud update neproběhl (žádný řádek nenalezen), provedeme INSERT
+          if (data_result.rowCount === 0) {
+              await client.query(
+                  `INSERT INTO exercise_data (exercise_id, data) VALUES ($1, $2)`,
+                  [exerciseId, data_content]
+              );
+          }
+      }
+      
+      await client.query('COMMIT');
+
+      // Zkontrolujeme, zda bylo aspoň jedno z polí aktualizováno
+      if (ex_updates.length === 0 && data_content === undefined) {
+          return res.status(400).json({ error: 'Žádné parametry pro úpravu nebyly poskytnuty.' });
+      }
+
+      res.json({ message: 'Cvičení a jeho data byla úspěšně aktualizována.' });
+
+  } catch (err) {
+      await client.query('ROLLBACK');
+      console.error('Chyba při úpravě cvičení:', err);
+      res.status(500).json({ error: 'Chyba serveru při úpravě cvičení.' });
+  } finally {
+      client.release();
+  }
+});
 
 
 
