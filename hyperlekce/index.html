@@ -188,8 +188,11 @@
         let activeLessonId = null; 
         let isLoading = false;
     
-        // --- LOGIKA (Funkce pro přidání, úpravy, mazání jsou ponechány beze změny) ---
+        // --- LOGIKA ---
     
+        // --------------------------------------------------------
+        // FUNKCE PRO SUPER LEKCE & SEKCE (PONECHÁNO BEZE ZMĚNY)
+        // --------------------------------------------------------
         async function addSuperLesson() {
             const titleInput = document.getElementById('sl-title');
             const descInput = document.getElementById('sl-desc');
@@ -199,7 +202,6 @@
                 titleInput.value = ''; descInput.value = ''; await loadFromServer(true);
             } catch (err) { console.error(err); alert('Nepodařilo se vytvořit super lekci.'); }
         }
-    
         async function editSuperLesson(lessonId) {
             const lesson = learningData.find(l => String(l.id) === String(lessonId));
             if (!lesson) return;
@@ -211,7 +213,6 @@
                 await loadFromServer(true);
             } catch (err) { console.error(err); alert('Nepodařilo se uložit změny super lekce.'); }
         }
-    
         async function deleteSuperLesson(lessonId) {
             const lesson = learningData.find(l => String(l.id) === String(lessonId));
             if (!lesson) return;
@@ -222,7 +223,6 @@
                 await loadFromServer(true);
             } catch (err) { console.error(err); alert('Mazání super lekce selhalo.'); }
         }
-    
         async function addSection() {
             const titleInput = document.getElementById('sec-title');
             if(!titleInput.value.trim()) { alert('Vyplňte název oddělení!'); return; }
@@ -233,7 +233,6 @@
                 titleInput.value = ''; await loadFromServer(true);
             } catch (err) { console.error(err); alert('Nepodařilo se přidat oddělení.'); }
         }
-    
         async function editSection(sectionId) {
             const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
             if (!lesson) return;
@@ -248,7 +247,6 @@
                 await loadFromServer(true);
             } catch (err) { console.error(err); alert('Nepodařilo se upravit oddělení.'); }
         }
-    
         async function deleteSection(sectionId) {
             const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
             if (!lesson) return;
@@ -260,91 +258,156 @@
                 await loadFromServer(true);
             } catch (err) { console.error(err); alert('Mazání oddělení selhalo.'); }
         }
-    
         function addExercise(sectionId) {
             const url = `${INVESTIGO_BASE_URL}/?sectionId=${encodeURIComponent(sectionId)}`;
             const newWindow = window.open(url, '_blank');
             if (!newWindow) { alert('Pop-up blokován! Povolte pop-up okna pro tento web a zkuste to znovu.'); }
         }
+        // --------------------------------------------------------
+        // UD FUNKCE PRO LESSONS (PONECHÁNO BEZE ZMĚNY)
+        // --------------------------------------------------------
+        function editExercise(sectionId, lessonId) {
+            const lesson = learningData.find(l => l.id === activeLessonId);
+            if (!lesson) return;
+            const section = lesson.sections.find(s => String(s.id) === String(sectionId));
+            if (!section) return;
+            const currentLesson = section.exercises.find(e => String(e.id) === String(lessonId));
+            if (!currentLesson) return;
     
-   // NAHRADÍ TUTO FUNKCI:
-function editExercise(sectionId, lessonId) {
-    const lesson = learningData.find(l => l.id === activeLessonId);
-    if (!lesson) return;
-    const section = lesson.sections.find(s => String(s.id) === String(sectionId));
-    if (!section) return;
-    const currentLesson = section.exercises.find(e => String(e.id) === String(lessonId));
-    if (!currentLesson) return;
-
-    // Původní data Lekce
-    const oldData = currentLesson.lesson_all_data;
-
-    // Vyzveme k úpravě všech polí
-    const newTitle = prompt('Uprav název lekce:', oldData.title);
-    if (newTitle === null) return;
+            const oldData = currentLesson.lesson_all_data;
+            const newTitle = prompt('Uprav název lekce:', oldData.title);
+            if (newTitle === null) return;
+            const newIntro = prompt('Uprav INTRO:', oldData.intro || '');
+            if (newIntro === null) return;
+            const newBeforeExercise = prompt('Uprav BEFORE_EXERCISE:', oldData.before_exercise || '');
+            if (newBeforeExercise === null) return;
+            const newOutro = prompt('Uprav OUTRO:', oldData.outro || '');
+            if (newOutro === null) return;
     
-    const newIntro = prompt('Uprav INTRO:', oldData.intro || '');
-    if (newIntro === null) return;
-
-    const newBeforeExercise = prompt('Uprav BEFORE_EXERCISE:', oldData.before_exercise || '');
-    if (newBeforeExercise === null) return;
-
-    const newOutro = prompt('Uprav OUTRO:', oldData.outro || '');
-    if (newOutro === null) return;
-
-    // Data k odeslání
-    const updateData = {
-        title: newTitle.trim(),
-        intro: newIntro,
-        before_exercise: newBeforeExercise,
-        outro: newOutro
-    };
-
-    // Odeslání PATCH požadavku na server
-    fetch(`/api/lessons/${lessonId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData)
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('Úprava selhala na serveru.');
-        return res.json();
-    })
-    .then(() => {
-        alert("Lekce byla úspěšně upravena na serveru.");
-        loadFromServer(true); // Znovu načteme data pro aktualizaci zobrazení
-    })
-    .catch(err => {
-        console.error(err);
-        alert('Chyba při úpravě lekce: ' + err.message);
-    });
-}
+            const updateData = { title: newTitle.trim(), intro: newIntro, before_exercise: newBeforeExercise, outro: newOutro };
+            fetch(`/api/lessons/${lessonId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updateData) })
+            .then(res => {
+                if (!res.ok) throw new Error('Úprava selhala na serveru.');
+                return res.json();
+            })
+            .then(() => {
+                alert("Lekce byla úspěšně upravena na serveru.");
+                loadFromServer(true);
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Chyba při úpravě lekce: ' + err.message);
+            });
+        }
+        function deleteExercise(sectionId, lessonId) {
+            const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
+            if (!lesson) return;
+            const section = lesson.sections.find(s => String(s.id) === String(sectionId));
+            if (!section) return;
+            const currentLesson = section.exercises.find(e => String(e.id) === String(lessonId));
+            if (!currentLesson) return;
+            
+            if (!confirm(`Opravdu smazat lekci "${currentLesson.label}" (ID: ${currentLesson.id})? Tímto se smažou i všechna přidružená cvičení!`)) return;
+            
+            fetch(`/api/lessons/${lessonId}`, { method: 'DELETE' })
+            .then(res => {
+                if (!res.ok) throw new Error('Mazání selhalo na serveru.');
+                alert("Lekce byla úspěšně smazána na serveru.");
+                loadFromServer(true);
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Chyba při mazání lekce: ' + err.message);
+            });
+        }
     
-        // NAHRADÍ TUTO FUNKCI:
-function deleteExercise(sectionId, lessonId) {
-    const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
-    if (!lesson) return;
-    const section = lesson.sections.find(s => String(s.id) === String(sectionId));
-    if (!section) return;
-    const currentLesson = section.exercises.find(e => String(e.id) === String(lessonId));
-    if (!currentLesson) return;
+        // --------------------------------------------------------
+        // !!! NOVÉ A OPRAVENÉ UD FUNKCE PRO INDIVIDUÁLNÍ CVIČENÍ !!!
+        // --------------------------------------------------------
     
-    if (!confirm(`Opravdu smazat lekci "${currentLesson.label}" (ID: ${currentLesson.id})? Tímto se smažou i všechna přidružená cvičení!`)) return;
+        function editIndividualExercise(exerciseId) {
+            let currentExercise = null;
+            // Najdeme cvičení v lokálních datech
+            learningData.forEach(superL => {
+                superL.sections.forEach(sec => {
+                    sec.exercises.forEach(lesson => { 
+                        const found = lesson.exercises.find(ex => String(ex.id) === String(exerciseId));
+                        if (found) { currentExercise = found; }
+                    });
+                });
+            });
     
-    // Odeslání DELETE požadavku na server
-    fetch(`/api/lessons/${lessonId}`, {
-        method: 'DELETE'
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('Mazání selhalo na serveru.');
-        alert("Lekce byla úspěšně smazána na serveru.");
-        loadFromServer(true); // Znovu načteme data pro aktualizaci zobrazení
-    })
-    .catch(err => {
-        console.error(err);
-        alert('Chyba při mazání lekce: ' + err.message);
-    });
-}
+            if (!currentExercise) { alert('Cvičení nenalezeno v lokálních datech.'); return; }
+    
+            const oldData = currentExercise.exercise_all_data;
+    
+            // Vyzveme k úpravě polí
+            const newType = prompt('Uprav Typ cvičení:', oldData.type);
+            if (newType === null) return;
+            
+            const newQuestion = prompt('Uprav Otázku cvičení:', oldData.question || '');
+            if (newQuestion === null) return;
+    
+            // Převod JSON/objektu na čitelný string pro prompt
+            const oldContentString = (typeof oldData.data_content === 'object' && oldData.data_content !== null)
+                ? JSON.stringify(oldData.data_content, null, 2)
+                : String(oldData.data_content || '');
+    
+            const newDataContent = prompt('Uprav Obsah (DATA):', oldContentString);
+            if (newDataContent === null) return;
+            
+            let parsedData = newDataContent;
+            // Zkusíme parsovat jako JSON
+            try {
+                parsedData = JSON.parse(newDataContent);
+            } catch(e) {
+                // Pošleme jako string, pokud to není validní JSON
+            }
+    
+            const updateData = {
+                type: newType.trim(),
+                question: newQuestion,
+                data_content: parsedData
+            };
+    
+            // Odeslání PATCH požadavku na server
+            fetch(`/api/exercises/${exerciseId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updateData)
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Úprava selhala na serveru. Zkontrolujte logy serveru.');
+                alert("Cvičení bylo úspěšně upraveno na serveru.");
+                loadFromServer(true); 
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Chyba při úpravě cvičení: ' + err.message);
+            });
+        }
+    
+    
+        function deleteIndividualExercise(exerciseId) {
+            if (!confirm(`Opravdu smazat Cvičení ID: ${exerciseId}? Tímto se smažou i jeho data!`)) return;
+    
+            // Odeslání DELETE požadavku na server
+            fetch(`/api/exercises/${exerciseId}`, { method: 'DELETE' })
+            .then(res => {
+                if (!res.ok) throw new Error('Mazání selhalo na serveru.');
+                alert("Cvičení bylo úspěšně smazáno na serveru.");
+                loadFromServer(true); 
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Chyba při mazání cvičení: ' + err.message);
+            });
+        }
+    
+    
+        // --------------------------------------------------------
+        // OSTATNÍ (PONECHÁNO BEZE ZMĚNY)
+        // --------------------------------------------------------
     
         function exportData() {
             console.clear();
@@ -398,7 +461,7 @@ function deleteExercise(sectionId, lessonId) {
             
             if (activeLessonId === null) {
                 // ... vykreslení hlavní stránky (SuperLekce)
-                 let html = `<div class="header">Admin: Strom Učení</div><div class="content"><div class="form-box"><span class="label">Nová Super Lekce:</span><input type="text" id="sl-title" placeholder="Název (např. Základy)"><input type="text" id="sl-desc" placeholder="Popis"><button class="btn-add" onclick="addSuperLesson()">+ PŘIDAT SUPER LEKCI</button></div><div class="divider"></div>`;
+                let html = `<div class="header">Admin: Strom Učení</div><div class="content"><div class="form-box"><span class="label">Nová Super Lekce:</span><input type="text" id="sl-title" placeholder="Název (např. Základy)"><input type="text" id="sl-desc" placeholder="Popis"><button class="btn-add" onclick="addSuperLesson()">+ PŘIDAT SUPER LEKCI</button></div><div class="divider"></div>`;
                 learningData.forEach(lesson => {
                     html += `<div class="card" onclick="activeLessonId = '${lesson.id}'; renderApp()"><div class="card-title">${lesson.title}</div><div class="card-desc">${lesson.description || ''}</div><div style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;"><div class="card-hint">Klikni pro otevření →</div><div><button class="btn-edit btn-small" onclick="event.stopPropagation(); editSuperLesson('${lesson.id}')">Upravit</button><button class="btn-delete btn-small" onclick="event.stopPropagation(); deleteSuperLesson('${lesson.id}')">Smazat</button></div></div></div>`;
                 });
@@ -455,64 +518,59 @@ function deleteExercise(sectionId, lessonId) {
                         // END VYPISU VŠECH DAT LEKCE
     
                         // START VYPISU VŠECH DAT CVIČENÍ
-                        // Opravený kód pro vypisování dat Cvičení
-// NAHRADIT TENTO CYKLUS UVNITŘ lessonItem.exercises.forEach:
-// START VYPISU VŠECH DAT CVIČENÍ
-lessonItem.exercises.forEach((ex, index) => {
-    const exData = ex.exercise_all_data;
-    
-    // Zjistíme, jestli data existují. (Převzato z předchozí opravy)
-    let dataContent = exData.data_content;
-    let displayContent = 'PRÁZDNÉ';
-    let dataColor = 'var(--danger)';
-
-    if (dataContent) {
-        let contentString;
-        if (typeof dataContent === 'object' && dataContent !== null) {
-            contentString = JSON.stringify(dataContent);
-        } else {
-            contentString = String(dataContent);
-        }
-
-        dataColor = 'var(--success)';
-        // Váš kód, který ukazuje celý obsah:
-        displayContent = contentString; 
-    }
-
-    html += `
-        <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; margin-bottom: 5px; font-size: 12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="font-weight: bold; color: #ffc107;">EX ID: ${ex.id}</div>
-                <div>
-                    <button class="btn-edit btn-small" onclick="editIndividualExercise('${ex.id}')" style="margin-right: 5px;">✎</button>
-                    <button class="btn-delete btn-small" onclick="deleteIndividualExercise('${ex.id}')">✕</button>
-                </div>
-            </div>
-            
-            <strong>Typ:</strong> ${exData.type}<br>
-            <strong>Otázka:</strong> ${exData.question}<br>
-            <strong>Obsah (DATA):</strong> <span style="font-family: monospace; color: ${dataColor};">${displayContent}</span><br>
-            <span style="font-size: 10px; color: #ccc;">Vytvořeno: ${new Date(exData.created_at).toLocaleString()}</span>
-        </div>
-    `;
-});
-// END VYPISU VŠECH DAT CVIČENÍ
-                        // END VYPISU VŠECH DAT CVIČENÍ
-    
-                        html += `</div>`; // Uzavření exercise-item
-                    });
-    
-                    html += `
-                            </div>
+                        lessonItem.exercises.forEach((ex, index) => {
+                            const exData = ex.exercise_all_data;
                             
-                            <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:10px;">
-                                <span class="label" style="font-size:11px; color:#aaa;">Novou lekci vytvoř v aplikaci Investigo:</span>
-                                <button class="btn-nav btn-small" onclick="addExercise('${section.id}')">+ Přidat lekci v Investigo</button>
-                            </div>
-                        </div>
-                    `;
-                });
+                            // Zpracování dat (dle vaší úpravy)
+                            let dataContent = exData.data_content;
+                            let displayContent = 'PRÁZDNÉ';
+                            let dataColor = 'var(--danger)';
     
+                            if (dataContent) {
+                                let contentString;
+                                if (typeof dataContent === 'object' && dataContent !== null) {
+                                    contentString = JSON.stringify(dataContent, null, 2); // Používáme indentaci pro lepší čtení JSONu
+                                } else {
+                                    contentString = String(dataContent);
+                                }
+    
+                                dataColor = 'var(--success)';
+                                displayContent = contentString; 
+                            }
+    
+                            html += `
+                                <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; margin-bottom: 5px; font-size: 12px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <div style="font-weight: bold; color: #ffc107;">EX ID: ${ex.id}</div>
+                                        <div>
+                                            <button class="btn-edit btn-small" onclick="editIndividualExercise('${ex.id}')" style="margin-right: 5px;">✎</button>
+                                            <button class="btn-delete btn-small" onclick="deleteIndividualExercise('${ex.id}')">✕</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <strong>Typ:</strong> ${exData.type}<br>
+                                    <strong>Otázka:</strong> ${exData.question}<br>
+                                    <strong>Obsah (DATA):</strong> <span style="font-family: monospace; color: ${dataColor}; white-space: pre-wrap;">${displayContent}</span><br>
+                                    <span style="font-size: 10px; color: #ccc;">Vytvořeno: ${new Date(exData.created_at).toLocaleString()}</span>
+                                </div>
+                            `;
+                        });
+                        // END VYPISU VŠECH DAT CVIČENÍ
+                        
+                        html += `</div>`; // Uzavření exercise-item (lekce)
+                    });
+        
+                    html += `
+                                </div>
+                                
+                                <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:10px;">
+                                    <span class="label" style="font-size:11px; color:#aaa;">Novou lekci vytvoř v aplikaci Investigo:</span>
+                                    <button class="btn-nav btn-small" onclick="addExercise('${section.id}')">+ Přidat lekci v Investigo</button>
+                                </div>
+                            </div>
+                        `;
+                });
+        
                 html += '</div>';
                 root.innerHTML = html;
             }
