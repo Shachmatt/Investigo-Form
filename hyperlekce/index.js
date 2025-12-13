@@ -24,25 +24,27 @@ app.use(express.static(path.join(__dirname)));
 // Pomocná funkce: načíst super lessons + sections
 app.get('/api/data', async (req, res) => {
   try {
-    // KONEČNÝ SQL DOTAZ s přesnými názvy sloupců
+    // SQL DOTAZ: Znovu explicitně vybíráme VŠECHNY potřebné sloupce.
     const result = await db.query(`
         SELECT 
           sl.id AS super_id, sl.title AS super_title, sl.description,
           s.id AS section_id, s.title AS section_title, s.position AS section_position,
           
-          -- Tabulka 'lessons' (l) - Použijeme ji jako "exercise" ve frontendu
+          -- Tabulka 'lessons' (l) - Všechny sloupce
           l.id AS lesson_id, l.title AS lesson_title, l.intro, l.before_exercise, l.outro, l.section_id, 
+          l.created_at AS lesson_created_at, l.updated_at AS lesson_updated_at,
           
-          -- Tabulka 'exercises' (e) - Cvičení uvnitř Lekce
+          -- Tabulka 'exercises' (e) - Všechny sloupce
           e.id AS exercise_id, e.lesson_id, e.type AS exercise_type, e.question AS exercise_question, 
+          e.created_at AS exercise_created_at,
           
-          -- Tabulka 'exercise_data' (ed) - Data cvičení
-          ed.id AS data_id, ed.exercise_id AS data_exercise_id, ed.data AS exercise_content
+          -- Tabulka 'exercise_data' (ed) - Všechny sloupce
+          ed.id AS data_id, ed.exercise_id AS data_exercise_id, ed.data AS exercise_data_content
         FROM superLessons sl
         LEFT JOIN sections s ON s.super_lesson_id = sl.id
-        LEFT JOIN lessons l ON l.section_id = s.id         -- Lessons patří do sekce
-        LEFT JOIN exercises e ON e.lesson_id = l.id        -- Exercises patří do lesson
-        LEFT JOIN exercise_data ed ON ed.exercise_id = e.id -- Data patří k exercise
+        LEFT JOIN lessons l ON l.section_id = s.id
+        LEFT JOIN exercises e ON e.lesson_id = l.id
+        LEFT JOIN exercise_data ed ON ed.exercise_id = e.id
         
         ORDER BY sl.id ASC, s.position NULLS LAST, s.id ASC, l.id ASC, e.id ASC
       `);
@@ -50,7 +52,7 @@ app.get('/api/data', async (req, res) => {
     const map = new Map();
 
     result.rows.forEach(row => {
-      // --- 1. SUPER LESSON ---
+      // 1. SUPER LESSON
       if (!map.has(row.super_id)) {
         map.set(row.super_id, {
           id: String(row.super_id),
@@ -62,14 +64,14 @@ app.get('/api/data', async (req, res) => {
       }
       const currentSuper = map.get(row.super_id);
 
-      // --- 2. SECTION ---
+      // 2. SECTION
       if (row.section_id) {
         if (!currentSuper._sectionsMap.has(row.section_id)) {
           const newSection = {
             id: String(row.section_id),
             title: row.section_title,
             position: row.section_position,
-            exercises: [], // Zde frontend očekává pole "cvičení" (ve skutečnosti naše Lekce)
+            exercises: [], // Frontend očekává pole "cvičení" (naše Lessons)
             _lessonsMap: new Map()
           };
           currentSuper.sections.push(newSection);
@@ -77,37 +79,52 @@ app.get('/api/data', async (req, res) => {
         }
         const currentSection = currentSuper._sectionsMap.get(row.section_id);
 
-        // --- 3. LESSON (Mapujeme na frontend pole "exercises") ---
+        // 3. LESSON (Frontend "exercise")
         if (row.lesson_id) {
           if (!currentSection._lessonsMap.has(row.lesson_id)) {
-            // Frontend: ex-circle ukáže 'label', my použijeme 'lesson_title'
+            // Tady mapujeme VŠECHNY sloupce z lessons (l)
             const newLesson = {
               id: String(row.lesson_id),
               label: row.lesson_title || 'Neznámá lekce', 
-              lesson_details: {
+              
+              // >>> KOMPLETNÍ DATA Z lessons TADY <<<
+              lesson_all_data: {
+                id: String(row.lesson_id),
+                title: row.lesson_title,
                 intro: row.intro,
                 before_exercise: row.before_exercise,
-                outro: row.outro
+                outro: row.outro,
+                section_id: String(row.section_id),
+                created_at: row.lesson_created_at,
+                updated_at: row.lesson_updated_at,
               },
-              exercises: [] // Tady se budou hromadit skutečná Cvičení (e + ed)
+              exercises: [] // Pole skutečných Cvičení (e + ed)
             };
             currentSection.exercises.push(newLesson);
             currentSection._lessonsMap.set(row.lesson_id, newLesson);
           }
           const currentLesson = currentSection._lessonsMap.get(row.lesson_id);
 
-          // --- 4. EXERCISE + DATA ---
-          // Ukládáme skutečné cvičení a jeho data do pole 'exercises' uvnitř lekce
+          // 4. EXERCISE + DATA
           if (row.exercise_id) {
-            // Zabráníme duplicitám cvičení, pokud je v exercise_data více řádků
             const existingExercise = currentLesson.exercises.find(ex => ex.id === row.exercise_id);
             if (!existingExercise) {
+                // Tady mapujeme VŠECHNY sloupce z exercises (e) a exercise_data (ed)
                 currentLesson.exercises.push({
                     id: String(row.exercise_id),
-                    type: row.exercise_type,
-                    question: row.exercise_question,
-                    // Klíčová data pro formulář:
-                    data: row.exercise_content // Toto je sloupec 'data' z tabulky exercise_data
+                    // >>> KOMPLETNÍ DATA Z exercises A exercise_data TADY <<<
+                    exercise_all_data: {
+                        // Data z exercises
+                        id: String(row.exercise_id),
+                        lesson_id: String(row.lesson_id),
+                        type: row.exercise_type,
+                        question: row.exercise_question,
+                        created_at: row.exercise_created_at,
+                        // Data z exercise_data
+                        data_id: row.data_id,
+                        data_exercise_id: row.data_exercise_id,
+                        data_content: row.exercise_data_content // toto je sloupec 'data'
+                    }
                 });
             }
           }
@@ -115,7 +132,7 @@ app.get('/api/data', async (req, res) => {
       }
     });
 
-    // Úklid pomocných map
+    // Úklid pomocných map a odeslání
     const finalData = Array.from(map.values()).map(sl => {
         delete sl._sectionsMap;
         sl.sections = sl.sections.map(sec => {
