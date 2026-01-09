@@ -224,18 +224,31 @@
             } catch (err) { console.error(err); alert('Mazání super lekce selhalo.'); }
         }
         async function addSection() {
+            console.log('addSection() - Function called');
             const titleInput = document.getElementById('sec-title');
             if(!titleInput.value.trim()) { alert('Vyplňte název oddělení!'); return; }
             const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
-            if (!lesson) return;
+            console.log('addSection() - Found lesson:', lesson, 'activeLessonId:', activeLessonId);
+            if (!lesson) { console.error('addSection() - No lesson found!'); return; }
+            const requestBody = { lessonId: lesson.id, title: titleInput.value };
+            console.log('addSection() - Sending request:', requestBody);
             try {
-                const res = await fetch('/api/sections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lessonId: lesson.id, title: titleInput.value }) });
+                const res = await fetch('/api/sections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
+                console.log('addSection() - Response status:', res.status, res.statusText);
                 if (!res.ok) {
                     const errorData = await res.json().catch(() => ({ error: 'Neznámá chyba serveru' }));
+                    console.error('addSection() - Error response:', errorData);
                     throw new Error(errorData.error || `HTTP ${res.status}`);
                 }
-                titleInput.value = ''; await loadFromServer(true);
-            } catch (err) { console.error(err); alert('Nepodařilo se přidat oddělení: ' + err.message); }
+                const responseData = await res.json();
+                console.log('addSection() - Success! Response data:', responseData);
+                titleInput.value = ''; 
+                await loadFromServer(true);
+                console.log('addSection() - Data reloaded');
+            } catch (err) { 
+                console.error('addSection() - Exception:', err); 
+                alert('Nepodařilo se přidat oddělení: ' + err.message); 
+            }
         }
         async function editSection(sectionId) {
             const lesson = learningData.find(l => String(l.id) === String(activeLessonId));

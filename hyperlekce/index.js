@@ -196,18 +196,27 @@ app.delete('/api/super-lessons/:id', async (req, res) => {
 
 // --- Sections ---
 app.post('/api/sections', async (req, res) => {
+  console.log('POST /api/sections - Received request:', req.body);
   const { lessonId, title, position } = req.body;
-  if (!lessonId) return res.status(400).json({ error: 'lessonId is required' });
-  if (!title?.trim()) return res.status(400).json({ error: 'title is required' });
+  if (!lessonId) {
+    console.log('POST /api/sections - Validation failed: lessonId is required');
+    return res.status(400).json({ error: 'lessonId is required' });
+  }
+  if (!title?.trim()) {
+    console.log('POST /api/sections - Validation failed: title is required');
+    return res.status(400).json({ error: 'title is required' });
+  }
 
   try {
+    console.log('POST /api/sections - Attempting database insert with:', { lessonId, title: title.trim(), position: position ?? null });
     const result = await db.query(
       `INSERT INTO sections (super_lesson_id, title, position) VALUES ($1, $2, $3) RETURNING id, title, position`,
       [lessonId, title.trim(), position ?? null]
     );
+    console.log('POST /api/sections - Successfully inserted section:', result.rows[0]);
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error('Chyba při vytváření sekce:', err);
+    console.error('POST /api/sections - Database error:', err);
     res.status(500).json({ error: 'Chyba serveru při vytváření sekce.' });
   }
 });
