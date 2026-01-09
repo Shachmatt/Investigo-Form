@@ -435,12 +435,15 @@
         }
     
         async function loadFromServer(keepActive = false) {
-            if (isLoading) return;
+            console.log('loadFromServer() - Called with keepActive:', keepActive);
+            if (isLoading) { console.log('loadFromServer() - Already loading, skipping'); return; }
             isLoading = true;
             try {
+                console.log('loadFromServer() - Fetching data from /api/data');
                 const res = await fetch('/api/data');
                 if (!res.ok) throw new Error('Chyba při načítání dat ze serveru');
                 const data = await res.json();
+                console.log('loadFromServer() - Received data:', data);
                 
                 learningData = (Array.isArray(data) ? data : []).map(l => ({
                     ...l,
@@ -456,6 +459,15 @@
                     }))
                 }));
     
+                console.log('loadFromServer() - Processed learningData:', learningData);
+                const activeLesson = learningData.find(l => String(l.id) === String(activeLessonId));
+                if (activeLesson) {
+                    console.log('loadFromServer() - Active lesson sections count:', activeLesson.sections.length);
+                    activeLesson.sections.forEach((s, idx) => {
+                        console.log(`  Section ${idx}: id=${s.id}, title=${s.title}`);
+                    });
+                }
+    
                 if (keepActive && activeLessonId) {
                     const stillExists = learningData.some(l => l.id === activeLessonId);
                     if (!stillExists) activeLessonId = null;
@@ -463,10 +475,11 @@
                     activeLessonId = null;
                 }
             } catch (err) {
-                console.error(err);
+                console.error('loadFromServer() - Error:', err);
                 alert('Nepodařilo se načíst data ze serveru.');
             } finally {
                 isLoading = false;
+                console.log('loadFromServer() - Calling renderApp()');
                 renderApp();
             }
         }
