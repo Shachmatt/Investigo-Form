@@ -57,6 +57,16 @@ app.get('/api/data', async (req, res) => {
     );
     console.log('GET /api/data - Direct query: sections with super_lesson_id=3:', directCheck.rows);
     
+    // Test the JOIN directly
+    const joinTest = await db.query(`
+      SELECT sl.id AS super_id, s.id AS section_id, s.title AS section_title
+      FROM superLessons sl
+      LEFT JOIN sections s ON s.super_lesson_id = sl.id
+      WHERE sl.id = 3
+      LIMIT 5
+    `);
+    console.log('GET /api/data - JOIN test for super_id=3:', joinTest.rows);
+    
     const sectionsForSuper3 = result.rows.filter(r => r.super_id === 3 && r.section_id);
     console.log('GET /api/data - Rows for super_id=3 with sections:', sectionsForSuper3.length);
     if (sectionsForSuper3.length > 0) {
@@ -67,13 +77,12 @@ app.get('/api/data', async (req, res) => {
         lesson_id: r.lesson_id
       })));
     } else {
-      // Show some sample rows to see what we're getting
+      // Show some sample rows to see what we're getting - show ALL columns
       const sampleRows = result.rows.filter(r => r.super_id === 3).slice(0, 2);
-      console.log('GET /api/data - Sample rows for super_id=3 (without filter):', sampleRows.map(r => ({
-        super_id: r.super_id,
-        section_id: r.section_id,
-        section_title: r.section_title
-      })));
+      console.log('GET /api/data - Sample rows for super_id=3 (first row, all columns):', sampleRows.length > 0 ? Object.keys(sampleRows[0]).reduce((acc, key) => {
+        acc[key] = sampleRows[0][key];
+        return acc;
+      }, {}) : 'No rows');
     }
 
     const map = new Map();
