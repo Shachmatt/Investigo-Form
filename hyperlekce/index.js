@@ -203,7 +203,7 @@ app.post('/api/sections', async (req, res) => {
   try {
     const result = await db.query(
       `INSERT INTO sections (super_lesson_id, title, position) VALUES ($1, $2, $3) RETURNING id, title, position`,
-[lessonId, title.trim(), position ?? null]
+      [lessonId, title.trim(), position ?? null]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

@@ -229,9 +229,13 @@
             const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
             if (!lesson) return;
             try {
-                await fetch('/api/sections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lessonId: lesson.id, title: titleInput.value }) });
+                const res = await fetch('/api/sections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lessonId: lesson.id, title: titleInput.value }) });
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ error: 'Neznámá chyba serveru' }));
+                    throw new Error(errorData.error || `HTTP ${res.status}`);
+                }
                 titleInput.value = ''; await loadFromServer(true);
-            } catch (err) { console.error(err); alert('Nepodařilo se přidat oddělení.'); }
+            } catch (err) { console.error(err); alert('Nepodařilo se přidat oddělení: ' + err.message); }
         }
         async function editSection(sectionId) {
             const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
