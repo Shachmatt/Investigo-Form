@@ -49,6 +49,18 @@ app.get('/api/data', async (req, res) => {
         ORDER BY sl.id ASC, s.position NULLS LAST, s.id ASC, l.id ASC, e.id ASC
       `);
 
+    console.log('GET /api/data - Total rows returned:', result.rows.length);
+    const sectionsForSuper3 = result.rows.filter(r => r.super_id === 3 && r.section_id);
+    console.log('GET /api/data - Rows for super_id=3 with sections:', sectionsForSuper3.length);
+    if (sectionsForSuper3.length > 0) {
+      console.log('GET /api/data - Sample section rows:', sectionsForSuper3.slice(0, 3).map(r => ({
+        super_id: r.super_id,
+        section_id: r.section_id,
+        section_title: r.section_title,
+        lesson_id: r.lesson_id
+      })));
+    }
+
     const map = new Map();
 
     result.rows.forEach(row => {
@@ -141,6 +153,16 @@ app.get('/api/data', async (req, res) => {
         });
         return sl;
     });
+
+    const super3 = finalData.find(sl => String(sl.id) === '3');
+    if (super3) {
+      console.log('GET /api/data - Final data for super_id=3:', {
+        id: super3.id,
+        title: super3.title,
+        sectionsCount: super3.sections.length,
+        sections: super3.sections.map(s => ({ id: s.id, title: s.title }))
+      });
+    }
 
     res.json(finalData);
 
