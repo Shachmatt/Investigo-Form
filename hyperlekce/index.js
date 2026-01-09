@@ -31,7 +31,7 @@ app.get('/api/data', async (req, res) => {
           s.id AS section_id, s.title AS section_title, s.position AS section_position,
           
           -- Tabulka 'lessons' (l) - Všechny sloupce
-          l.id AS lesson_id, l.title AS lesson_title, l.intro, l.before_exercise, l.outro, l.section_id, 
+          l.id AS lesson_id, l.title AS lesson_title, l.intro, l.before_exercise, l.outro, l.section_id AS lesson_section_id, 
           l.created_at AS lesson_created_at, l.updated_at AS lesson_updated_at,
           
           -- Tabulka 'exercises' (e) - Všechny sloupce
@@ -130,7 +130,7 @@ app.get('/api/data', async (req, res) => {
                 intro: row.intro,
                 before_exercise: row.before_exercise,
                 outro: row.outro,
-                section_id: String(row.section_id),
+                section_id: String(row.lesson_section_id),
                 created_at: row.lesson_created_at,
                 updated_at: row.lesson_updated_at,
               },
