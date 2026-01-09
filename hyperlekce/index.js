@@ -50,6 +50,13 @@ app.get('/api/data', async (req, res) => {
       `);
 
     console.log('GET /api/data - Total rows returned:', result.rows.length);
+    
+    // Check what sections exist for super_id=3 directly from database
+    const directCheck = await db.query(
+      `SELECT id, super_lesson_id, title FROM sections WHERE super_lesson_id = 3`
+    );
+    console.log('GET /api/data - Direct query: sections with super_lesson_id=3:', directCheck.rows);
+    
     const sectionsForSuper3 = result.rows.filter(r => r.super_id === 3 && r.section_id);
     console.log('GET /api/data - Rows for super_id=3 with sections:', sectionsForSuper3.length);
     if (sectionsForSuper3.length > 0) {
@@ -58,6 +65,14 @@ app.get('/api/data', async (req, res) => {
         section_id: r.section_id,
         section_title: r.section_title,
         lesson_id: r.lesson_id
+      })));
+    } else {
+      // Show some sample rows to see what we're getting
+      const sampleRows = result.rows.filter(r => r.super_id === 3).slice(0, 2);
+      console.log('GET /api/data - Sample rows for super_id=3 (without filter):', sampleRows.map(r => ({
+        super_id: r.super_id,
+        section_id: r.section_id,
+        section_title: r.section_title
       })));
     }
 
@@ -230,12 +245,27 @@ app.post('/api/sections', async (req, res) => {
   }
 
   try {
-    console.log('POST /api/sections - Attempting database insert with:', { lessonId, title: title.trim(), position: position ?? null });
+    // Convert lessonId to integer to ensure type consistency
+    const superLessonId = parseInt(lessonId, 10);
+    if (isNaN(superLessonId)) {
+      console.log('POST /api/sections - Invalid lessonId (not a number):', lessonId);
+      return res.status(400).json({ error: 'lessonId must be a valid number' });
+    }
+    
+    console.log('POST /api/sections - Attempting database insert with:', { superLessonId, title: title.trim(), position: position ?? null });
     const result = await db.query(
-      `INSERT INTO sections (super_lesson_id, title, position) VALUES ($1, $2, $3) RETURNING id, title, position`,
-      [lessonId, title.trim(), position ?? null]
+      `INSERT INTO sections (super_lesson_id, title, position) VALUES ($1, $2, $3) RETURNING id, title, position, super_lesson_id`,
+      [superLessonId, title.trim(), position ?? null]
     );
     console.log('POST /api/sections - Successfully inserted section:', result.rows[0]);
+    
+    // Verify the section was inserted correctly
+    const verifyResult = await db.query(
+      `SELECT id, super_lesson_id, title FROM sections WHERE id = $1`,
+      [result.rows[0].id]
+    );
+    console.log('POST /api/sections - Verification query result:', verifyResult.rows[0]);
+    
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('POST /api/sections - Database error:', err);
