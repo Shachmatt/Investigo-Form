@@ -855,7 +855,7 @@
         function endGame1() {
             const feedback = document.getElementById('gameFeedback1');
             feedback.className = 'game-feedback correct';
-            feedback.innerHTML = 🎮 Hra dokončena! Skóre: ${gameScore1}/3<br>Teď už víš, jak rozpoznat akcie!;
+            feedback.innerHTML = `🎮 Hra dokončena! Skóre: ${gameScore1}/3<br>Teď už víš, jak rozpoznat akcie!`;
             feedback.style.display = 'block';
             
             // Deaktivuj tlačítka
@@ -979,7 +979,7 @@ function nextGameRound2() { // Změna názvu funkce
         function endGame2() {
             const feedback = document.getElementById('gameFeedback2');
             feedback.className = 'game-feedback correct';
-            feedback.innerHTML = 🎮 Hra dokončena! Skóre: ${gameScore2}/4<br>Teď už rozpoznáš indexy!;
+            feedback.innerHTML = `🎮 Hra dokončena! Skóre: ${gameScore2}/4<br>Teď už rozpoznáš indexy!`;
             feedback.style.display = 'block';
             
             // Deaktivuj tlačítka
@@ -1032,7 +1032,7 @@ function nextGameRound2() { // Změna názvu funkce
                     break;
             }
             
-            result.className = simulation-result ${resultClass};
+            result.className = simulation-result `${resultClass}`;
             result.innerHTML = resultText;
             result.style.display = 'block';
             
@@ -1346,7 +1346,7 @@ function checkDragDrop() {
         updateProgress();
     } else {
         feedback.className = 'drag-feedback incorrect';
-        feedback.innerHTML = ❌ Správně: ${correct}/4. Zkus to znovu!;
+        feedback.innerHTML = `❌ Správně: ${correct}/4. Zkus to znovu!`;
         
         // Reset pro nový pokus
         setTimeout(() => {
@@ -1532,7 +1532,7 @@ function initDragDrop() {
             if (gameType === 'dividend') {
                 const feedback = document.getElementById('dividendGameFeedback');
                 feedback.className = 'game-feedback correct';
-                feedback.innerHTML = 🎮 Hra dokončena! Skóre: ${dividendGameScore}/4<br>Teď už rozumíš dividendám!;
+                feedback.innerHTML = `🎮 Hra dokončena! Skóre: ${dividendGameScore}/4<br>Teď už rozumíš dividendám!`;
                 feedback.style.display = 'block';
                 
                 document.querySelectorAll('.game-btn.dividend, .game-btn.not-dividend').forEach(btn => {
@@ -1542,7 +1542,7 @@ function initDragDrop() {
             } else {
                 const feedback = document.getElementById('stockGameFeedback');
                 feedback.className = 'game-feedback correct';
-                feedback.innerHTML = 🎮 Hra dokončena! Skóre: ${stockGameScore}/3<br>Už rozumíš rozdílu mezi burzou a tržištěm!;
+                feedback.innerHTML = `🎮 Hra dokončena! Skóre: ${stockGameScore}/3<br>Už rozumíš rozdílu mezi burzou a tržištěm!`;
                 feedback.style.display = 'block';
                 
                 document.querySelectorAll('.game-btn.stock-exchange, .game-btn.marketplace').forEach(btn => {
