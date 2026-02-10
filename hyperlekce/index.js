@@ -76,7 +76,7 @@ app.get('/api/data', async (req, res) => {
         section_title: r.section_title,
         lesson_id: r.lesson_id
       })));
-    } else {
+    } else { 
       // Show some sample rows to see what we're getting - show ALL columns
       const sampleRows = result.rows.filter(r => r.super_id === 3).slice(0, 2);
       console.log('GET /api/data - Sample rows for super_id=3 (first row, all columns):', sampleRows.length > 0 ? Object.keys(sampleRows[0]).reduce((acc, key) => {
