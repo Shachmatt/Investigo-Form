@@ -295,12 +295,14 @@
             if (newTitle === null) return;
             const newIntro = prompt('Uprav INTRO:', oldData.intro || '');
             if (newIntro === null) return;
+            const newSummary = prompt('Uprav SHRNUTÍ:', oldData.summary || '');
+            if (newSummary === null) return;
             const newBeforeExercise = prompt('Uprav BEFORE_EXERCISE:', oldData.before_exercise || '');
             if (newBeforeExercise === null) return;
             const newOutro = prompt('Uprav OUTRO:', oldData.outro || '');
             if (newOutro === null) return;
-    
-            const updateData = { title: newTitle.trim(), intro: newIntro, before_exercise: newBeforeExercise, outro: newOutro };
+
+            const updateData = { title: newTitle.trim(), intro: newIntro, summary: newSummary, before_exercise: newBeforeExercise, outro: newOutro };
             fetch(`/api/lessons/${lessonId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updateData) })
             .then(res => {
                 if (!res.ok) throw new Error('Úprava selhala na serveru.');
@@ -537,6 +539,7 @@
     
                                 <div style="color: var(--secondary); font-size: 13px; line-height: 1.5;">
                                     <strong>INTRO:</strong> ${lessonData.intro || '—'}<br>
+                                    <strong>SHRNUTÍ:</strong> ${lessonData.summary || '—'}<br>
                                     <strong>BEFORE EX:</strong> ${lessonData.before_exercise || '—'}<br>
                                     <strong>OUTRO:</strong> ${lessonData.outro || '—'}<br>
                                     <span style="font-size: 10px; color: #ccc;">Vytvořeno: ${new Date(lessonData.created_at).toLocaleString()}</span>

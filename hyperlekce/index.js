@@ -31,7 +31,7 @@ app.get('/api/data', async (req, res) => {
           s.id AS section_id, s.title AS section_title, s.position AS section_position,
           
           -- Tabulka 'lessons' (l) - Všechny sloupce
-          l.id AS lesson_id, l.title AS lesson_title, l.intro, l.before_exercise, l.outro, l.section_id AS lesson_section_id, 
+          l.id AS lesson_id, l.title AS lesson_title, l.intro, l.summary, l.before_exercise, l.outro, l.section_id AS lesson_section_id,
           l.created_at AS lesson_created_at, l.updated_at AS lesson_updated_at,
           
           -- Tabulka 'exercises' (e) - Všechny sloupce
@@ -128,6 +128,7 @@ app.get('/api/data', async (req, res) => {
                 id: String(row.lesson_id),
                 title: row.lesson_title,
                 intro: row.intro,
+                summary: row.summary,
                 before_exercise: row.before_exercise,
                 outro: row.outro,
                 section_id: String(row.lesson_section_id),
@@ -348,7 +349,7 @@ app.delete('/api/lessons/:lessonId', async (req, res) => {
 // 2. ÚPRAVA LEKCE (PATCH)
 app.patch('/api/lessons/:lessonId', async (req, res) => {
   const { lessonId } = req.params;
-  const { title, intro, before_exercise, outro } = req.body;
+  const { title, intro, summary, before_exercise, outro } = req.body;
   
   // Vytvoření dynamické sady pro SQL dotaz
   const updates = [];
@@ -362,6 +363,10 @@ app.patch('/api/lessons/:lessonId', async (req, res) => {
   if (intro !== undefined) {
       updates.push(`intro = $${paramIndex++}`);
       values.push(intro);
+  }
+  if (summary !== undefined) {
+      updates.push(`summary = $${paramIndex++}`);
+      values.push(summary);
   }
   if (before_exercise !== undefined) {
       updates.push(`before_exercise = $${paramIndex++}`);
