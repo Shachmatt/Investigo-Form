@@ -152,10 +152,12 @@
             margin-bottom: 8px;
         }
         .ex-circle {
-             height: 36px;
+            min-height: 36px;
+            padding: 4px 12px;
+            text-align: center;
             background: var(--secondary);
             color: var(--primary);
-            border-radius: 50%;
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -173,12 +175,49 @@
 
         /* Row pro inputy */
         .row { display: flex; gap: 10px; }
+
+        /* Pořadí: šipky, úchyt pro přetažení, číslo pozice */
+        .order { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; vertical-align: middle; }
+        .drag-handle {
+            cursor: grab; user-select: none; line-height: 1;
+            font-size: 20px; padding: 2px 4px; color: var(--secondary); opacity: 0.8;
+        }
+        .drag-handle:active { cursor: grabbing; }
+        .btn-move {
+            width: 28px; height: 28px; padding: 0; border-radius: 6px;
+            background: rgba(0,0,0,0.3); color: var(--secondary); font-size: 11px;
+        }
+        .btn-move:disabled { opacity: 0.25; cursor: default; }
+        .card .drag-handle { color: var(--primary); }
+        .card .btn-move { background: rgba(133,15,141,0.12); color: var(--primary); }
+        .pos-num {
+            display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+            min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px;
+            background: rgba(0,0,0,0.3); color: var(--secondary); font-size: 12px; font-weight: bold;
+        }
+        .card .pos-num { background: var(--primary); color: var(--secondary); }
+        .app-num { color: #ffc107; font-size: 12px; font-weight: bold; }
+        .dragging { opacity: 0.4; }
+        .drop-before { box-shadow: 0 -4px 0 0 #ffc107; }
+        .drop-after { box-shadow: 0 4px 0 0 #ffc107; }
+        .order-hint {
+            color: #eee; font-size: 12px; line-height: 1.5;
+            background: rgba(0,0,0,0.25); border-left: 3px solid #ffc107;
+            padding: 10px 12px; border-radius: 6px; margin-bottom: 20px;
+        }
+        #toast {
+            position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+            background: #222; color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 13px;
+            opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 100;
+        }
+        #toast.show { opacity: 1; }
     </style>
 </head>
 <body>
 
 <div id="app-root">
     </div>
+<div id="toast"></div>
 
     <script>
         // --- STAV APLIKACE ---
@@ -485,16 +524,180 @@
             }
         }
     
+        // --------------------------------------------------------
+        // POŘADÍ (super lekce, oddělení, lekce, cvičení)
+        // --------------------------------------------------------
+        // Přesouvá se šipkami ▲▼ nebo přetažením za úchyt ⠿. Na server jde vždy celý seznam
+        // jednoho rodiče v novém pořadí. Pořadí tady = pořadí v aplikaci.
+
+        let orderQueue = Promise.resolve(); // ukládání jde po sobě, ať poslední pořadí vyhraje
+        let drag = null;                    // { group, index, el } během přetahování
+        let toastTimer = null;
+
+        // Seznam, ve kterém se přesouvá (kind = typ, parentId = id rodiče)
+        function getList(kind, parentId) {
+            if (kind === 'super-lessons') return learningData;
+            const superLesson = learningData.find(l => String(l.id) === String(activeLessonId));
+            if (!superLesson) return null;
+            if (kind === 'sections') return superLesson.sections;
+            if (kind === 'lessons') return superLesson.sections.find(s => s.id === parentId)?.exercises || null;
+            if (kind === 'exercises') {
+                for (const section of superLesson.sections) {
+                    const lessonItem = section.exercises.find(l => l.id === parentId);
+                    if (lessonItem) return lessonItem.exercises;
+                }
+            }
+            return null;
+        }
+
+        async function saveOrder(kind, ids) {
+            const res = await fetch(`/api/order/${kind}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids })
+            });
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.error || `HTTP ${res.status}`);
+            }
+        }
+
+        // keepInView: po posunu šipkou zůstane položka na stejném místě obrazovky,
+        // takže se dá klikat dál (▼ ▼ ▼…)
+        function moveItem(kind, parentId, from, to, keepInView = true) {
+            const list = getList(kind, parentId);
+            if (!list || from === to || to < 0 || to >= list.length) return;
+            const root = document.getElementById('app-root');
+            const key = `${kind}-${list[from].id}`;
+            const topBefore = document.querySelector(`[data-key="${key}"]`)?.getBoundingClientRect().top;
+
+            const [item] = list.splice(from, 1);
+            list.splice(to, 0, item);
+            renderApp();
+
+            const topAfter = document.querySelector(`[data-key="${key}"]`)?.getBoundingClientRect().top;
+            if (keepInView && topBefore !== undefined && topAfter !== undefined) {
+                root.scrollTop += topAfter - topBefore;
+            }
+
+            const ids = list.map(x => x.id);
+            orderQueue = orderQueue
+                .then(() => saveOrder(kind, ids))
+                .then(() => showToast('Pořadí uloženo ✓'))
+                .catch(async err => {
+                    console.error('moveItem() - Error:', err);
+                    alert('Pořadí se nepodařilo uložit: ' + err.message + '\nNačítám data ze serveru znovu.');
+                    await loadFromServer(true);
+                });
+        }
+
+        // Úchyt ⠿ + šipky ▲▼ pro jednu položku
+        function orderControls(kind, parentId, index, count) {
+            const move = (to) => `event.stopPropagation(); moveItem('${kind}', '${parentId}', ${index}, ${to})`;
+            return `
+                <span class="order" onclick="event.stopPropagation()">
+                    <span class="drag-handle" title="Přetáhni na jiné místo" onmousedown="armDrag(event)">⠿</span>
+                    <button class="btn-move" title="Posunout výš" ${index === 0 ? 'disabled' : ''} onclick="${move(index - 1)}">▲</button>
+                    <button class="btn-move" title="Posunout níž" ${index === count - 1 ? 'disabled' : ''} onclick="${move(index + 1)}">▼</button>
+                </span>`;
+        }
+
+        // Atributy položky, kterou jde přetáhnout (jen v rámci stejného rodiče)
+        function sortAttrs(kind, parentId, index, id) {
+            return `data-sort-group="${kind}|${parentId}" data-index="${index}" data-key="${kind}-${id}"`;
+        }
+
+        // Číslo lekce v aplikaci (1, 2, 3… přes všechny super lekce). Aplikace si u uživatele
+        // pamatuje jen POČET dokončených lekcí, takže hotové jsou u něj lekce 1…počet.
+        function appLessonNumbers() {
+            const numbers = new Map();
+            let n = 0;
+            learningData.forEach(sl => sl.sections.forEach(sec => sec.exercises.forEach(l => numbers.set(l.id, ++n))));
+            return numbers;
+        }
+
+        const ORDER_HINT = `<div class="order-hint">
+            <strong>Pořadí tady = pořadí v aplikaci.</strong> Přesouvej šipkami ▲▼ nebo přetažením za ⠿ (ukládá se hned).<br>
+            Pozor: aplikace si u uživatele pamatuje jen <em>počet</em> dokončených lekcí. Když přesuneš lekci
+            před místo, kam už uživatelé došli, změní se jim, které lekce mají hotové.
+        </div>`;
+
+        // Přetahování: úchyt ⠿ zapne "draggable" jen na své položce (jinak by nešlo označit text)
+        function armDrag(event) {
+            const item = event.target.closest('[data-sort-group]');
+            if (item) item.draggable = true;
+        }
+        function disarmDrag() {
+            document.querySelectorAll('[data-sort-group][draggable="true"]').forEach(el => { el.draggable = false; });
+        }
+        function clearDropMarks() {
+            document.querySelectorAll('.drop-before, .drop-after').forEach(el => el.classList.remove('drop-before', 'drop-after'));
+        }
+        // Nejbližší položka stejné skupiny pod kurzorem a jestli pustit před ni, nebo za ni
+        function dropTarget(e) {
+            if (!drag || !e.target.closest) return null;
+            const over = e.target.closest(`[data-sort-group="${drag.group}"]`);
+            if (!over || over === drag.el) return null;
+            const rect = over.getBoundingClientRect();
+            return { el: over, after: e.clientY > rect.top + rect.height / 2 };
+        }
+
+        function setupDragAndDrop(root) {
+            document.addEventListener('mouseup', disarmDrag);
+            root.addEventListener('dragstart', e => {
+                const el = e.target.closest ? e.target.closest('[data-sort-group]') : null;
+                if (!el || !el.draggable) return; // např. přetahování označeného textu
+                drag = { group: el.dataset.sortGroup, index: Number(el.dataset.index), el };
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', el.dataset.key);
+                setTimeout(() => el.classList.add('dragging'), 0); // až po sejmutí náhledu
+            });
+            root.addEventListener('dragover', e => {
+                const target = dropTarget(e);
+                clearDropMarks();
+                if (!target) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                target.el.classList.add(target.after ? 'drop-after' : 'drop-before');
+            });
+            root.addEventListener('drop', e => {
+                const target = dropTarget(e);
+                clearDropMarks();
+                if (!target) return;
+                e.preventDefault();
+                const { group, index: from } = drag;
+                drag = null; // překreslení odstraní tažený prvek, dragend už nemusí přijít
+                const [kind, parentId] = group.split('|');
+                let to = Number(target.el.dataset.index) + (target.after ? 1 : 0);
+                if (from < to) to -= 1;
+                moveItem(kind, parentId, from, to, false);
+            });
+            root.addEventListener('dragend', () => {
+                if (drag) drag.el.classList.remove('dragging');
+                drag = null;
+                clearDropMarks();
+                disarmDrag();
+            });
+        }
+
+        function showToast(text) {
+            const el = document.getElementById('toast');
+            el.textContent = text;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 1500);
+        }
+
         // --- RENDER ---
-    
+
         function renderApp() {
             const root = document.getElementById('app-root');
             
             if (activeLessonId === null) {
                 // ... vykreslení hlavní stránky (SuperLekce)
-                let html = `<div class="header">Admin: Strom Učení</div><div class="content"><div class="form-box"><span class="label">Nová Super Lekce:</span><input type="text" id="sl-title" placeholder="Název (např. Základy)"><input type="text" id="sl-desc" placeholder="Popis"><button class="btn-add" onclick="addSuperLesson()">+ PŘIDAT SUPER LEKCI</button></div><div class="divider"></div>`;
-                learningData.forEach(lesson => {
-                    html += `<div class="card" onclick="activeLessonId = '${lesson.id}'; renderApp()"><div class="card-title">${lesson.title}</div><div class="card-desc">${lesson.description || ''}</div><div style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;"><div class="card-hint">Klikni pro otevření →</div><div><button class="btn-edit btn-small" onclick="event.stopPropagation(); editSuperLesson('${lesson.id}')">Upravit</button><button class="btn-delete btn-small" onclick="event.stopPropagation(); deleteSuperLesson('${lesson.id}')">Smazat</button></div></div></div>`;
+                let html = `<div class="header">Admin: Strom Učení</div><div class="content"><div class="form-box"><span class="label">Nová Super Lekce:</span><input type="text" id="sl-title" placeholder="Název (např. Základy)"><input type="text" id="sl-desc" placeholder="Popis"><button class="btn-add" onclick="addSuperLesson()">+ PŘIDAT SUPER LEKCI</button></div><div class="divider"></div>${ORDER_HINT}`;
+                learningData.forEach((lesson, i) => {
+                    html += `<div class="card" ${sortAttrs('super-lessons', '', i, lesson.id)} onclick="activeLessonId = '${lesson.id}'; renderApp()"><div style="display:flex; align-items:center; gap:10px;"><span class="pos-num" title="Pořadí">${i + 1}</span><div style="flex:1; min-width:0;"><div class="card-title">${lesson.title}</div><div class="card-desc">${lesson.description || ''}</div></div>${orderControls('super-lessons', '', i, learningData.length)}</div><div style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;"><div class="card-hint">Klikni pro otevření →</div><div><button class="btn-edit btn-small" onclick="event.stopPropagation(); editSuperLesson('${lesson.id}')">Upravit</button><button class="btn-delete btn-small" onclick="event.stopPropagation(); deleteSuperLesson('${lesson.id}')">Smazat</button></div></div></div>`;
                 });
                 html += `<div class="divider"></div><button class="btn-export" onclick="exportData()">EXPORT DATA DO KONZOLE (DEBUG)</button><button class="btn-nav" onclick="loadFromServer(true)">ZNOVU NAČÍST ZE SERVERU</button></div>`;
                 root.innerHTML = html;
@@ -503,13 +706,18 @@
                 // ---> ZOBRAZIT DETAIL LEKCE (SEKCE)
                 const lesson = learningData.find(l => String(l.id) === String(activeLessonId));
                 if (!lesson) { activeLessonId = null; renderApp(); return; }
-                let html = `<div class="nav-bar"><button class="back-btn" onclick="activeLessonId = null; renderApp()">← ZPĚT</button><div class="nav-title">${lesson.title}</div></div><div class="content"><div class="form-box"><span class="label">Přidat Oddělení (Sekci):</span><input type="text" id="sec-title" placeholder="Název (např. Zvířata)"><button class="btn-add" onclick="addSection()">+ PŘIDAT ODDĚLENÍ</button></div>`;
-    
-                lesson.sections.forEach(section => {
+                let html = `<div class="nav-bar"><button class="back-btn" onclick="activeLessonId = null; renderApp()">← ZPĚT</button><div class="nav-title">${lesson.title}</div></div><div class="content"><div class="form-box"><span class="label">Přidat Oddělení (Sekci):</span><input type="text" id="sec-title" placeholder="Název (např. Zvířata)"><button class="btn-add" onclick="addSection()">+ PŘIDAT ODDĚLENÍ</button></div>${ORDER_HINT}`;
+                const appNumbers = appLessonNumbers();
+
+                lesson.sections.forEach((section, sectionIndex) => {
                     html += `
-                        <div class="section-container">
+                        <div class="section-container" ${sortAttrs('sections', lesson.id, sectionIndex, section.id)}>
                             <div class="section-header">
-                                <span class="section-badge">${section.title}</span>
+                                <div style="display:flex; justify-content:center; align-items:center; gap:8px; flex-wrap:wrap;">
+                                    <span class="pos-num" title="Pořadí oddělení">${sectionIndex + 1}</span>
+                                    <span class="section-badge">${section.title}</span>
+                                    ${orderControls('sections', lesson.id, sectionIndex, lesson.sections.length)}
+                                </div>
                                 <div style="margin-top:8px;">
                                     <button class="btn-edit btn-small" onclick="editSection('${section.id}')">Upravit oddělení</button>
                                     <button class="btn-delete btn-small" onclick="deleteSection('${section.id}')">Smazat oddělení</button>
@@ -520,16 +728,18 @@
                     `;
     
                     // ITERACE PŘES LESSONS (které se jmenují exercises v JS)
-                    section.exercises.forEach(lessonItem => {
+                    section.exercises.forEach((lessonItem, lessonIndex) => {
                         const lessonData = lessonItem.lesson_all_data;
-                        
+
                         // START VYPISU VŠECH DAT LEKCE
                         html += `
-                            <div class="exercise-item" style="display:block; padding: 12px; background: rgba(255, 255, 255, 0.1);">
-                                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
+                            <div class="exercise-item" ${sortAttrs('lessons', section.id, lessonIndex, lessonItem.id)} style="display:block; padding: 12px; background: rgba(255, 255, 255, 0.1);">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom: 8px;">
+                                    <span class="pos-num" title="Pořadí v oddělení">${lessonIndex + 1}</span>
                                     <div class="ex-circle">${lessonItem.label}</div>
-                                    <div style="flex:1;"><div class="ex-id">ID Lekce: ${lessonItem.id}</div></div>
+                                    <div style="flex:1;"><div class="ex-id">ID Lekce: ${lessonItem.id}</div><div class="app-num">č. ${appNumbers.get(lessonItem.id)} v aplikaci</div></div>
                                     <div>
+                                        ${orderControls('lessons', section.id, lessonIndex, section.exercises.length)}
                                         <button class="btn-edit btn-small" onclick="editExercise('${section.id}', '${lessonItem.id}')">✎</button>
                                         <button class="btn-delete btn-small" onclick="deleteExercise('${section.id}', '${lessonItem.id}')">✕</button>
                                     </div>
@@ -571,10 +781,11 @@
                             }
     
                             html += `
-                                <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; margin-bottom: 5px; font-size: 12px;">
-                                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                                        <div style="font-weight: bold; color: #ffc107;">EX ID: ${ex.id}</div>
+                                <div ${sortAttrs('exercises', lessonItem.id, index, ex.id)} style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; margin-bottom: 5px; font-size: 12px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom: 6px;">
+                                        <div style="display:flex; align-items:center; gap:8px; font-weight: bold; color: #ffc107;"><span class="pos-num" title="Pořadí v lekci">${index + 1}</span>EX ID: ${ex.id}</div>
                                         <div>
+                                            ${orderControls('exercises', lessonItem.id, index, lessonItem.exercises.length)}
                                             <button class="btn-edit btn-small" onclick="editIndividualExercise('${ex.id}')" style="margin-right: 5px;">✎</button>
                                             <button class="btn-delete btn-small" onclick="deleteIndividualExercise('${ex.id}')">✕</button>
                                         </div>
@@ -609,6 +820,7 @@
         }
     
         // První spuštění – načti data ze serveru (pokud běží)
+        setupDragAndDrop(document.getElementById('app-root'));
         window.addEventListener('load', loadFromServer);
     
     </script>

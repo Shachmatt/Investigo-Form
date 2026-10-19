@@ -18,6 +18,92 @@ const db = new Pool({
 
 app.use(express.json());
 
+// --- POŘADÍ (position) ---
+// Super lekce, oddělení, lekce i cvičení se řadí podle sloupce "position" (a pak podle id).
+// Řádky bez pozice (např. lekce právě přidaná přes lesson-form) skončí na konci svého rodiče.
+// Tabulky, které jdou přeřadit, a sloupec jejich rodiče:
+const ORDERABLE = {
+  'super-lessons': { table: 'superLessons', parent: null },
+  sections: { table: 'sections', parent: 'super_lesson_id' },
+  lessons: { table: 'lessons', parent: 'section_id' },
+  exercises: { table: 'exercises', parent: 'lesson_id' },
+};
+
+// Při startu: přidá chybějící sloupce "position" a doplní pozice řádkům, které ji nemají,
+// za jejich sourozence (podle id, tedy ve stejném pořadí jako dosud). Dá se spouštět opakovaně.
+async function ensurePositions() {
+  for (const { table, parent } of Object.values(ORDERABLE)) {
+    await db.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS position integer`);
+    const sameParent = parent ? `o.${parent} = r.${parent}` : 'TRUE';
+    const partition = parent ? `PARTITION BY r.${parent}` : '';
+    const filled = await db.query(`
+      UPDATE ${table} t SET position = x.pos
+      FROM (
+        SELECT r.id,
+               COALESCE((SELECT MAX(o.position) FROM ${table} o WHERE ${sameParent}), 0)
+                 + ROW_NUMBER() OVER (${partition} ORDER BY r.id) AS pos
+        FROM ${table} r
+        WHERE r.position IS NULL
+      ) x
+      WHERE t.id = x.id
+    `);
+    if (filled.rowCount) console.log(`Pořadí: doplněno ${filled.rowCount} pozic v tabulce ${table}`);
+  }
+}
+
+// Nové pořadí jednoho rodiče: editor pošle VŠECHNA id sourozenců v novém pořadí
+// a ta dostanou pozice 1..n.
+app.put('/api/order/:kind', async (req, res) => {
+  const cfg = ORDERABLE[req.params.kind];
+  if (!cfg) return res.status(404).json({ error: 'Neznámý typ.' });
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(Number) : [];
+  if (!ids.length || ids.some(id => !Number.isInteger(id)) || new Set(ids).size !== ids.length) {
+    return res.status(400).json({ error: 'Pošli pole ids bez duplicit.' });
+  }
+
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Seznam musí obsahovat přesně všechny sourozence (jinak je editor zastaralý)
+    let siblings;
+    if (cfg.parent) {
+      const parents = await client.query(
+        `SELECT DISTINCT ${cfg.parent} AS parent FROM ${cfg.table} WHERE id = ANY($1::int[])`, [ids]
+      );
+      if (parents.rowCount !== 1) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Položky nepatří ke stejnému rodiči.' });
+      }
+      siblings = await client.query(
+        `SELECT id FROM ${cfg.table} WHERE ${cfg.parent} = $1 FOR UPDATE`, [parents.rows[0].parent]
+      );
+    } else {
+      siblings = await client.query(`SELECT id FROM ${cfg.table} FOR UPDATE`);
+    }
+    const siblingIds = new Set(siblings.rows.map(r => r.id));
+    if (siblingIds.size !== ids.length || ids.some(id => !siblingIds.has(id))) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Seznam není aktuální, načti data znovu.' });
+    }
+
+    await client.query(
+      `UPDATE ${cfg.table} t SET position = x.pos
+       FROM unnest($1::int[]) WITH ORDINALITY AS x(id, pos)
+       WHERE t.id = x.id`,
+      [ids]
+    );
+    await client.query('COMMIT');
+    res.json({ status: 'ok' });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('Chyba při ukládání pořadí:', err);
+    res.status(500).json({ error: 'Chyba serveru při ukládání pořadí.' });
+  } finally {
+    client.release();
+  }
+});
+
 // Statické soubory (index.html, CSS, JS)
 app.use(express.static(path.join(__dirname)));
 
@@ -27,16 +113,16 @@ app.get('/api/data', async (req, res) => {
     // SQL DOTAZ: Znovu explicitně vybíráme VŠECHNY potřebné sloupce.
     const result = await db.query(`
         SELECT 
-          sl.id AS super_id, sl.title AS super_title, sl.description,
+          sl.id AS super_id, sl.title AS super_title, sl.description, sl.position AS super_position,
           s.id AS section_id, s.title AS section_title, s.position AS section_position,
-          
+
           -- Tabulka 'lessons' (l) - Všechny sloupce
           l.id AS lesson_id, l.title AS lesson_title, l.intro, l.summary, l.before_exercise, l.outro, l.section_id AS lesson_section_id,
-          l.created_at AS lesson_created_at, l.updated_at AS lesson_updated_at,
-          
+          l.created_at AS lesson_created_at, l.updated_at AS lesson_updated_at, l.position AS lesson_position,
+
           -- Tabulka 'exercises' (e) - Všechny sloupce
-          e.id AS exercise_id, e.lesson_id, e.type AS exercise_type, e.question AS exercise_question, 
-          e.created_at AS exercise_created_at,
+          e.id AS exercise_id, e.lesson_id, e.type AS exercise_type, e.question AS exercise_question,
+          e.created_at AS exercise_created_at, e.position AS exercise_position,
           
           -- Tabulka 'exercise_data' (ed) - Všechny sloupce
           ed.id AS data_id, ed.exercise_id AS data_exercise_id, ed.data AS exercise_data_content
@@ -46,7 +132,11 @@ app.get('/api/data', async (req, res) => {
         LEFT JOIN exercises e ON e.lesson_id = l.id
         LEFT JOIN exercise_data ed ON ed.exercise_id = e.id
         
-        ORDER BY sl.id ASC, s.position NULLS LAST, s.id ASC, l.id ASC, e.id ASC
+        -- Toto pořadí je i pořadí lekcí v aplikaci (podle něj se počítá postup uživatele)
+        ORDER BY sl.position NULLS LAST, sl.id ASC,
+                 s.position NULLS LAST, s.id ASC,
+                 l.position NULLS LAST, l.id ASC,
+                 e.position NULLS LAST, e.id ASC
       `);
 
     console.log('GET /api/data - Total rows returned:', result.rows.length);
@@ -94,6 +184,7 @@ app.get('/api/data', async (req, res) => {
           id: String(row.super_id),
           title: row.super_title,
           description: row.description,
+          position: row.super_position,
           sections: [],
           _sectionsMap: new Map()
         });
@@ -121,8 +212,9 @@ app.get('/api/data', async (req, res) => {
             // Tady mapujeme VŠECHNY sloupce z lessons (l)
             const newLesson = {
               id: String(row.lesson_id),
-              label: row.lesson_title || 'Neznámá lekce', 
-              
+              label: row.lesson_title || 'Neznámá lekce',
+              position: row.lesson_position,
+
               // >>> KOMPLETNÍ DATA Z lessons TADY <<<
               lesson_all_data: {
                 id: String(row.lesson_id),
@@ -149,6 +241,7 @@ app.get('/api/data', async (req, res) => {
                 // Tady mapujeme VŠECHNY sloupce z exercises (e) a exercise_data (ed)
                 currentLesson.exercises.push({
                     id: String(row.exercise_id),
+                    position: row.exercise_position,
                     // >>> KOMPLETNÍ DATA Z exercises A exercise_data TADY <<<
                     exercise_all_data: {
                         // Data z exercises
@@ -512,6 +605,15 @@ app.patch('/api/exercises/:exerciseId', async (req, res) => {
 
 
 
-app.listen(PORT, () => {
-  console.log(`Server běží na http://localhost:${PORT}`);
-});
+// Server se spustí až po přípravě sloupců "position". Když to selže, proces skončí,
+// takže na Renderu nový deploy neprojde a dál běží ten předchozí.
+ensurePositions()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server běží na http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('Nepodařilo se připravit sloupce position:', err);
+    process.exit(1);
+  });
